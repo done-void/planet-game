@@ -155,3 +155,119 @@ canvas {
   transform: scale(1.05);
   box-shadow: 0 0 20px var(--accent-color);
 }
+
+/* =========================================
+   Legend / Info Button UI
+   ========================================= */
+#info-button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: #fff;
+  cursor: pointer;
+  font-size: 0.9rem;
+  backdrop-filter: blur(5px);
+  z-index: 10;
+  transition: all 0.2s;
+}
+
+#info-button:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: scale(1.05);
+}
+
+.modal {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 20;
+  backdrop-filter: blur(5px);
+}
+
+.legend-content {
+  background: rgba(20, 20, 40, 0.9);
+  border: 1px solid rgba(102, 252, 241, 0.3);
+  padding: 20px;
+  border-radius: 15px;
+  width: 90%;
+  max-width: 350px;
+  max-height: 80%;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
+}
+
+.legend-content h2 {
+  margin-top: 0;
+  text-align: center;
+  color: #66fcf1;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  padding-bottom: 10px;
+}
+
+#legend-list {
+  flex-grow: 1;
+  overflow-y: auto;
+  margin-bottom: 15px;
+  padding-right: 5px;
+}
+
+/* Scrollbar styles */
+#legend-list::-webkit-scrollbar {
+  width: 6px;
+}
+#legend-list::-webkit-scrollbar-thumb {
+  background: rgba(102, 252, 241, 0.3);
+  border-radius: 3px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 15px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 10px;
+  padding: 10px;
+}
+
+.legend-item canvas {
+  margin-right: 15px;
+  flex-shrink: 0;
+}
+
+.legend-text {
+  font-size: 0.85rem;
+  line-height: 1.4;
+  color: #fff;
+}
+
+.legend-text strong {
+  color: #66fcf1;
+  font-size: 1rem;
+}
+
+#close-legend {
+  background: rgba(102, 252, 241, 0.2);
+  border: 1px solid #66fcf1;
+  color: #66fcf1;
+  padding: 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.2s;
+  width: 100%;
+}
+
+#close-legend:hover {
+  background: rgba(102, 252, 241, 0.4);
+}

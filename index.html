@@ -25,10 +25,21 @@
           <div id="game-over-screen" class="hidden">
             <h1>GAME OVER</h1>
             <p>Score: <span id="final-score">0</span></p>
-            <button id="retry-btn">もう一度プレイ</button>
+            <button id="retry-btn">もう一度遊ぶ</button>
           </div>
         </div>
       </div>
+
+      <!-- Legend Modal -->
+      <div id="legend-modal" class="modal hidden">
+        <div class="modal-content legend-content">
+          <h2>星の図鑑</h2>
+          <div id="legend-list"></div>
+          <button id="close-legend">閉じる</button>
+        </div>
+      </div>
+
+      <div id="info-button" title="星の図鑑">📖 図鑑</div>
     </div>
     <script type="module" src="./main.js"></script>
   </body>
