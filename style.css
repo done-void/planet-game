@@ -119,7 +119,8 @@ canvas {
   z-index: 100;
 }
 
-#game-over-screen.hidden {
+.hidden {
+  display: none !important;
   opacity: 0;
   pointer-events: none;
 }
