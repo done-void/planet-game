@@ -41,7 +41,15 @@ Composite.add(world, [ground, leftWall, rightWall]);
 
 // Game State
 let score = 0;
-let nextPlanetIndex = Math.floor(Math.random() * 5); // 0 to 4 (月〜金星あたりが初期出現)
+
+function getNextPlanetIndex() {
+  if (Math.random() < 0.05) {
+    return 12; // ミニブラックホール
+  }
+  return Math.floor(Math.random() * 5); // 通常の月〜金星
+}
+
+let nextPlanetIndex = getNextPlanetIndex();
 let currentFalling = null;
 let isGameOver = false;
 let currentX = width / 2;
@@ -98,7 +106,13 @@ function triggerDrop() {
   if (isGameOver || currentFalling) return;
   
   currentFalling = addPlanet(currentX, 50, nextPlanetIndex);
-  nextPlanetIndex = Math.floor(Math.random() * 5);
+  
+  if (PLANETS[nextPlanetIndex].isItem) {
+    currentFalling.createdAt = Date.now();
+    blackHoles.push(currentFalling);
+  }
+  
+  nextPlanetIndex = getNextPlanetIndex();
   updateNextPreview();
   
   setTimeout(() => {
@@ -171,7 +185,7 @@ Events.on(engine, 'collisionStart', (event) => {
         const newBody = addPlanet(newX, newY, newIndex);
         
         // ブラックホールが生成された場合、特別リストに追加
-        if (PLANETS[newIndex].isBlackHole) {
+        if (PLANETS[newIndex].isBlackHole && !PLANETS[newIndex].isItem) {
           blackHoles.push(newBody);
         }
       }
@@ -188,11 +202,27 @@ Events.on(engine, 'beforeUpdate', () => {
   bodies.forEach(body => {
     // ゲームオーバー判定: デッドライン(y=100)より上にあり、かつ静止している場合
     if (body.planetIndex !== undefined && body.position.y < 100 && Math.abs(body.velocity.y) < 0.2 && !currentFalling) {
-      setGameOver();
+      if (!PLANETS[body.planetIndex].isItem) {
+        setGameOver();
+      }
     }
-    
-    // ブラックホールの処理
-    blackHoles.forEach(bh => {
+  });
+
+  // ブラックホールの処理
+  for (let i = blackHoles.length - 1; i >= 0; i--) {
+    const bh = blackHoles[i];
+    const planetDef = PLANETS[bh.planetIndex];
+
+    // アイテム（ミニブラックホール）の寿命チェック
+    if (planetDef.isItem) {
+      if (Date.now() - bh.createdAt > 5000) {
+        Composite.remove(world, bh);
+        blackHoles.splice(i, 1);
+        continue;
+      }
+    }
+
+    bodies.forEach(body => {
       // 自身ではなく、まだ合体中でない惑星に対して
       if (body !== bh && body.planetIndex !== undefined && !body.isMerging) {
         const dx = bh.position.x - body.position.x;
@@ -202,7 +232,7 @@ Events.on(engine, 'beforeUpdate', () => {
         // ブラックホールから一定範囲内の惑星を吸い寄せる
         if (dist < 400) { // 吸い込み範囲
           // 吸い込まれた（ブラックホールの中心付近に到達した）場合
-          if (dist < PLANETS[bh.planetIndex].radius * 0.8) {
+          if (dist < planetDef.radius * 0.8) {
             body.isMerging = true; // 削除マーク
             Composite.remove(world, body);
             score += PLANETS[body.planetIndex].score;
@@ -218,7 +248,7 @@ Events.on(engine, 'beforeUpdate', () => {
         }
       }
     });
-  });
+  }
 });
 
 function drawPlanetContent(context, planet, radius) {
@@ -387,7 +417,7 @@ document.getElementById('retry-btn').addEventListener('click', () => {
   currentFalling = null;
   document.getElementById('game-over-screen').classList.add('hidden');
   
-  nextPlanetIndex = Math.floor(Math.random() * 5);
+  nextPlanetIndex = getNextPlanetIndex();
   updateNextPreview();
 });
 
