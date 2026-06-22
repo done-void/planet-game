@@ -86,37 +86,58 @@ function addPlanet(x, y, index) {
   return body;
 }
 
-// ユーザー操作 (マウス移動とクリック)
-container.addEventListener('mousemove', (e) => {
-  if (isGameOver || currentFalling) return;
+function updateCurrentX(clientX) {
   const rect = container.getBoundingClientRect();
-  let x = e.clientX - rect.left;
+  let x = clientX - rect.left;
   const planetRadius = PLANETS[nextPlanetIndex].radius;
   currentX = Math.max(planetRadius, Math.min(width - planetRadius, x));
-});
+}
 
-// タッチ操作対応
-container.addEventListener('touchmove', (e) => {
+function triggerDrop() {
   if (isGameOver || currentFalling) return;
-  const rect = container.getBoundingClientRect();
-  let x = e.touches[0].clientX - rect.left;
-  const planetRadius = PLANETS[nextPlanetIndex].radius;
-  currentX = Math.max(planetRadius, Math.min(width - planetRadius, x));
-});
-
-container.addEventListener('click', () => {
-  if (isGameOver) return;
-  if (currentFalling) return; // 落下中は次を落とせない
   
   currentFalling = addPlanet(currentX, 50, nextPlanetIndex);
-  
   nextPlanetIndex = Math.floor(Math.random() * 5);
   updateNextPreview();
   
-  // 連続投下を防ぐクールダウン
   setTimeout(() => {
     currentFalling = null;
   }, 1000);
+}
+
+// マウス操作
+container.addEventListener('mousemove', (e) => {
+  if (isGameOver || currentFalling) return;
+  updateCurrentX(e.clientX);
+});
+container.addEventListener('mousedown', (e) => {
+  if (isGameOver || currentFalling) return;
+  updateCurrentX(e.clientX);
+});
+container.addEventListener('mouseup', () => {
+  triggerDrop();
+});
+container.addEventListener('mouseleave', () => {
+  // コンテナ外に出た時も一応落とすか、キャンセルするか。今回は落とす。
+  // ただし意図しない落下を防ぐため、今回は何もしない（画面内で離す想定）
+});
+
+// タッチ操作
+container.addEventListener('touchmove', (e) => {
+  if (isGameOver || currentFalling) return;
+  // スクロールなどのデフォルト挙動を防止（ドラッグしやすくする）
+  e.preventDefault();
+  updateCurrentX(e.touches[0].clientX);
+}, { passive: false });
+
+container.addEventListener('touchstart', (e) => {
+  if (isGameOver || currentFalling) return;
+  // e.preventDefault(); を入れるとボタンが押せなくなる場合があるため注意
+  updateCurrentX(e.touches[0].clientX);
+}, { passive: true });
+
+container.addEventListener('touchend', () => {
+  triggerDrop();
 });
 
 // 衝突と合体
