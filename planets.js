@@ -11,5 +11,6 @@ export const PLANETS = [
   { name: '木星', radius: 128, color: '#c88b3a', score: 55, gradient: ['#e5b06a', '#8e5714'], feature: 'stripes' },
   { name: '太陽', radius: 150, color: '#ffcc33', score: 66, gradient: ['#ffeb85', '#d69711'], feature: 'sun' },
   { name: 'ブラックホール', radius: 175, color: '#000000', score: 100, gradient: ['#333333', '#000000'], isBlackHole: true, feature: 'none' },
-  { name: 'ミニブラックホール', radius: 50, color: '#000000', score: 0, gradient: ['#4a004a', '#000000'], isBlackHole: true, isItem: true, feature: 'none' }
+  { name: 'ミニブラックホール', radius: 50, color: '#000000', score: 0, gradient: ['#4a004a', '#000000'], isBlackHole: true, isItem: true, feature: 'none' },
+  { name: 'ホワイトホール', radius: 50, color: '#ffffff', score: 0, gradient: ['#ffffff', '#a8d8ff'], isWhiteHole: true, isItem: true, feature: 'none' }
 ];

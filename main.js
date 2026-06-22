@@ -43,8 +43,11 @@ Composite.add(world, [ground, leftWall, rightWall]);
 let score = 0;
 
 function getNextPlanetIndex() {
-  if (Math.random() < 0.05) {
+  const r = Math.random();
+  if (r < 0.05) {
     return 12; // ミニブラックホール
+  } else if (r < 0.10) {
+    return 13; // ホワイトホール
   }
   return Math.floor(Math.random() * 5); // 通常の月〜金星
 }
@@ -54,6 +57,7 @@ let currentFalling = null;
 let isGameOver = false;
 let currentX = width / 2;
 const blackHoles = [];
+const whiteHoles = [];
 
 const scoreEl = document.getElementById('score');
 const nextPreviewEl = document.getElementById('next-preview');
@@ -109,7 +113,9 @@ function triggerDrop() {
   
   if (PLANETS[nextPlanetIndex].isItem) {
     currentFalling.createdAt = Date.now();
-    blackHoles.push(currentFalling);
+    currentFalling.lastSpitAt = Date.now(); // ホワイトホール用
+    if (PLANETS[nextPlanetIndex].isBlackHole) blackHoles.push(currentFalling);
+    if (PLANETS[nextPlanetIndex].isWhiteHole) whiteHoles.push(currentFalling);
   }
   
   nextPlanetIndex = getNextPlanetIndex();
@@ -249,6 +255,59 @@ Events.on(engine, 'beforeUpdate', () => {
       }
     });
   }
+
+  // ホワイトホールの処理
+  for (let i = whiteHoles.length - 1; i >= 0; i--) {
+    const wh = whiteHoles[i];
+    const planetDef = PLANETS[wh.planetIndex];
+
+    if (Date.now() - wh.createdAt > 5000) {
+      Composite.remove(world, wh);
+      whiteHoles.splice(i, 1);
+      continue;
+    }
+
+    // 斥力（吹き飛ばす力）
+    bodies.forEach(body => {
+      // ホワイトホール・ブラックホール以外のまだ合体中でない惑星に対して
+      if (body !== wh && body.planetIndex !== undefined && !body.isMerging && !PLANETS[body.planetIndex].isWhiteHole && !PLANETS[body.planetIndex].isBlackHole) {
+        const dx = body.position.x - wh.position.x;
+        const dy = body.position.y - wh.position.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        
+        // ブラックホールと逆のベクトルで遠ざける
+        if (dist < 300) {
+          const forceMagnitude = 0.0002 * body.mass;
+          Matter.Body.applyForce(body, body.position, {
+            x: (dx / dist) * forceMagnitude,
+            y: (dy / dist) * forceMagnitude
+          });
+        }
+      }
+    });
+
+    // 定期的に星を吐き出す (500msに1回)
+    if (Date.now() - wh.lastSpitAt > 500) {
+      wh.lastSpitAt = Date.now();
+      const spitIndex = Math.floor(Math.random() * 2); // 月か冥王星（小さい星）
+      const spitRadius = PLANETS[spitIndex].radius;
+      
+      const angle = Math.random() * Math.PI * 2;
+      const spawnDist = planetDef.radius + spitRadius + 5;
+      const spawnX = wh.position.x + Math.cos(angle) * spawnDist;
+      const spawnY = wh.position.y + Math.sin(angle) * spawnDist;
+
+      // 画面内に収まるように
+      if (spawnX > 30 && spawnX < width - 30 && spawnY > 150 && spawnY < height - 50) {
+        const newBody = addPlanet(spawnX, spawnY, spitIndex);
+        const speed = 8; // 発射速度
+        Matter.Body.setVelocity(newBody, {
+          x: Math.cos(angle) * speed,
+          y: Math.sin(angle) * speed
+        });
+      }
+    }
+  }
 });
 
 function drawPlanetContent(context, planet, radius) {
@@ -293,7 +352,7 @@ function drawPlanetContent(context, planet, radius) {
   }
 
   // Face
-  if (!planet.isBlackHole) {
+  if (!planet.isBlackHole && !planet.isWhiteHole) {
     context.fillStyle = '#1a1a1a';
     const eyeOffsetX = radius * 0.35;
     const eyeOffsetY = -radius * 0.15;
@@ -414,6 +473,7 @@ document.getElementById('retry-btn').addEventListener('click', () => {
   scoreEl.innerText = score;
   isGameOver = false;
   blackHoles.length = 0;
+  whiteHoles.length = 0;
   currentFalling = null;
   document.getElementById('game-over-screen').classList.add('hidden');
   
