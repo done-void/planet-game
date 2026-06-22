@@ -52,6 +52,20 @@ const nextPreviewEl = document.getElementById('next-preview');
 function updateNextPreview() {
   const planet = PLANETS[nextPlanetIndex];
   nextPreviewEl.style.background = `radial-gradient(circle at 30% 30%, ${planet.gradient[0]}, ${planet.gradient[1]})`;
+  
+  if (!planet.isBlackHole) {
+    nextPreviewEl.innerHTML = `
+      <div style="position: relative; width: 100%; height: 100%;">
+        <div style="position: absolute; top: 30%; left: 25%; width: 12%; height: 12%; background: #1a1a1a; border-radius: 50%;"></div>
+        <div style="position: absolute; top: 30%; right: 25%; width: 12%; height: 12%; background: #1a1a1a; border-radius: 50%;"></div>
+        <div style="position: absolute; top: 50%; left: 35%; width: 30%; height: 20%; border-bottom: 2px solid #1a1a1a; border-radius: 50%;"></div>
+        <div style="position: absolute; top: 45%; left: 15%; width: 15%; height: 15%; background: rgba(255, 100, 100, 0.5); border-radius: 50%;"></div>
+        <div style="position: absolute; top: 45%; right: 15%; width: 15%; height: 15%; background: rgba(255, 100, 100, 0.5); border-radius: 50%;"></div>
+      </div>
+    `;
+  } else {
+    nextPreviewEl.innerHTML = '';
+  }
 }
 
 function addPlanet(x, y, index) {
@@ -195,6 +209,36 @@ Events.on(render, 'afterRender', () => {
       context.arc(0, 0, radius, 0, 2 * Math.PI);
       context.fillStyle = grad;
       context.fill();
+      
+      // 顔の描画
+      if (!planet.isBlackHole) {
+        context.fillStyle = '#1a1a1a'; // 目の色
+        const eyeOffsetX = radius * 0.35;
+        const eyeOffsetY = -radius * 0.15;
+        const eyeRadius = Math.max(radius * 0.1, 2);
+        
+        // 左目・右目
+        context.beginPath();
+        context.arc(-eyeOffsetX, eyeOffsetY, eyeRadius, 0, 2 * Math.PI);
+        context.arc(eyeOffsetX, eyeOffsetY, eyeRadius, 0, 2 * Math.PI);
+        context.fill();
+        
+        // 口 (ニコッ)
+        context.beginPath();
+        context.arc(0, radius * 0.1, radius * 0.3, 0, Math.PI, false);
+        context.strokeStyle = '#1a1a1a';
+        context.lineWidth = Math.max(radius * 0.05, 1.5);
+        context.stroke();
+        
+        // ほっぺた
+        context.fillStyle = 'rgba(255, 100, 100, 0.5)';
+        context.beginPath();
+        context.arc(-eyeOffsetX * 1.2, radius * 0.15, eyeRadius, 0, 2 * Math.PI);
+        context.fill();
+        context.beginPath();
+        context.arc(eyeOffsetX * 1.2, radius * 0.15, eyeRadius, 0, 2 * Math.PI);
+        context.fill();
+      }
       
       context.lineWidth = 1;
       context.strokeStyle = 'rgba(255,255,255,0.3)';
