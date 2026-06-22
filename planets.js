@@ -10,7 +10,9 @@ export const PLANETS = [
   { name: '土星', radius: 108, color: '#ceb8b8', score: 45, gradient: ['#e8dada', '#9b8282'], feature: 'ring' },
   { name: '木星', radius: 128, color: '#c88b3a', score: 55, gradient: ['#e5b06a', '#8e5714'], feature: 'stripes' },
   { name: '太陽', radius: 150, color: '#ffcc33', score: 66, gradient: ['#ffeb85', '#d69711'], feature: 'sun' },
+  { name: '超大質量星', radius: 165, color: '#a8d8ff', score: 88, gradient: ['#ffffff', '#4da6ff'], isSupermassive: true, feature: 'none' },
   { name: 'ブラックホール', radius: 175, color: '#000000', score: 100, gradient: ['#333333', '#000000'], isBlackHole: true, feature: 'none' },
-  { name: 'ミニブラックホール', radius: 50, color: '#000000', score: 0, gradient: ['#4a004a', '#000000'], isBlackHole: true, isItem: true, feature: 'none' },
-  { name: 'ホワイトホール', radius: 50, color: '#ffffff', score: 0, gradient: ['#ffffff', '#a8d8ff'], isWhiteHole: true, isItem: true, feature: 'none' }
+  { name: 'ホワイトホール', radius: 50, color: '#ffffff', score: 0, gradient: ['#ffffff', '#a8d8ff'], isWhiteHole: true, isItem: true, feature: 'none' },
+  { name: '青色超巨星', radius: 50, color: '#a8d8ff', score: 0, gradient: ['#ffffff', '#4da6ff'], isSupermassive: true, isItem: true, feature: 'none' },
+  { name: 'ミニブラックホール', radius: 50, color: '#000000', score: 0, gradient: ['#4a004a', '#000000'], isBlackHole: true, isItem: true, feature: 'none' }
 ];

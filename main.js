@@ -45,7 +45,7 @@ let score = 0;
 function getNextPlanetIndex() {
   const r = Math.random();
   if (r < 0.05) {
-    return 12; // ミニブラックホール
+    return 14; // 青色超巨星（アイテム）
   } else if (r < 0.10) {
     return 13; // ホワイトホール
   }
@@ -58,6 +58,7 @@ let isGameOver = false;
 let currentX = width / 2;
 const blackHoles = [];
 const whiteHoles = [];
+const supermassiveStars = [];
 
 const scoreEl = document.getElementById('score');
 const nextPreviewEl = document.getElementById('next-preview');
@@ -116,6 +117,7 @@ function triggerDrop() {
     currentFalling.lastSpitAt = Date.now(); // ホワイトホール用
     if (PLANETS[nextPlanetIndex].isBlackHole) blackHoles.push(currentFalling);
     if (PLANETS[nextPlanetIndex].isWhiteHole) whiteHoles.push(currentFalling);
+    if (PLANETS[nextPlanetIndex].isSupermassive) supermassiveStars.push(currentFalling);
   }
   
   nextPlanetIndex = getNextPlanetIndex();
@@ -170,10 +172,13 @@ Events.on(engine, 'collisionStart', (event) => {
     const bodyB = pairs[i].bodyB;
 
     if (bodyA.planetIndex !== undefined && bodyA.planetIndex === bodyB.planetIndex) {
-      const index = bodyA.planetIndex;
+        // 超大質量星(11)以上のインデックスは合体しない
+        if (bodyA.planetIndex >= 11) return;
+        
+        let newIndex = bodyA.planetIndex + 1;
+        // 念のための上限チェック
+        if (newIndex >= PLANETS.length) return;
       
-      // 同じ惑星同士が衝突し、かつ進化限界(ブラックホール)未満の場合
-      if (index < PLANETS.length - 1) {
         if (bodyA.isMerging || bodyB.isMerging) continue; // 既に合体処理中ならスキップ
         bodyA.isMerging = true;
         bodyB.isMerging = true;
@@ -182,8 +187,6 @@ Events.on(engine, 'collisionStart', (event) => {
 
         const newX = (bodyA.position.x + bodyB.position.x) / 2;
         const newY = (bodyA.position.y + bodyB.position.y) / 2;
-        const newIndex = index + 1;
-
         // スコア加算
         score += PLANETS[newIndex].score;
         scoreEl.innerText = score;
@@ -193,6 +196,12 @@ Events.on(engine, 'collisionStart', (event) => {
         // ブラックホールが生成された場合、特別リストに追加
         if (PLANETS[newIndex].isBlackHole && !PLANETS[newIndex].isItem) {
           blackHoles.push(newBody);
+        }
+        
+        // 超大質量星が生成された場合、爆発タイマーをセット
+        if (PLANETS[newIndex].isSupermassive && !PLANETS[newIndex].isItem) {
+          newBody.createdAt = Date.now();
+          supermassiveStars.push(newBody);
         }
       }
     }
@@ -213,6 +222,48 @@ Events.on(engine, 'beforeUpdate', () => {
       }
     }
   });
+
+  // 超大質量星（時限爆弾）の処理
+  for (let i = supermassiveStars.length - 1; i >= 0; i--) {
+    const star = supermassiveStars[i];
+    const planetDef = PLANETS[star.planetIndex];
+
+    if (Date.now() - star.createdAt > 10000) { // 10秒で爆発
+      const x = star.position.x;
+      const y = star.position.y;
+
+      // 超新星爆発: 周囲の星を吹き飛ばす
+      bodies.forEach(body => {
+        if (body !== star && body.planetIndex !== undefined && !body.isMerging) {
+          const dx = body.position.x - x;
+          const dy = body.position.y - y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          
+          if (dist < 400) {
+            // 爆風（距離が近いほど強い）
+            const force = (400 - dist) * 0.0003 * body.mass;
+            Matter.Body.applyForce(body, body.position, {
+              x: (dx / dist) * force,
+              y: (dy / dist) * force
+            });
+          }
+        }
+      });
+
+      // 自身を削除
+      Composite.remove(world, star);
+      supermassiveStars.splice(i, 1);
+
+      // 跡地にブラックホールを生成
+      const bhIndex = planetDef.isItem ? 15 : 12; // アイテムならミニBH(15)、通常なら特大BH(12)
+      const newBH = addPlanet(x, y, bhIndex);
+      
+      if (planetDef.isItem) {
+        newBH.createdAt = Date.now(); // ミニBHの寿命用タイマーをセット
+      }
+      blackHoles.push(newBH);
+    }
+  }
 
   // ブラックホールの処理
   for (let i = blackHoles.length - 1; i >= 0; i--) {
@@ -354,7 +405,7 @@ function drawPlanetContent(context, planet, radius) {
   }
 
   // Face
-  if (!planet.isBlackHole && !planet.isWhiteHole) {
+  if (!planet.isBlackHole && !planet.isWhiteHole && !planet.isSupermassive) {
     context.fillStyle = '#1a1a1a';
     const eyeOffsetX = radius * 0.35;
     const eyeOffsetY = -radius * 0.15;
@@ -476,6 +527,7 @@ document.getElementById('retry-btn').addEventListener('click', () => {
   isGameOver = false;
   blackHoles.length = 0;
   whiteHoles.length = 0;
+  supermassiveStars.length = 0;
   currentFalling = null;
   document.getElementById('game-over-screen').classList.add('hidden');
   
