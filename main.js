@@ -236,7 +236,8 @@ Events.on(engine, 'beforeUpdate', () => {
         const dist = Math.sqrt(dx * dx + dy * dy);
         
         // ブラックホールから一定範囲内の惑星を吸い寄せる
-        if (dist < 400) { // 吸い込み範囲
+        const pullRadius = planetDef.radius * 2.5; // サイズに応じた吸引範囲（ミニなら狭く、巨大なら広く）
+        if (dist < pullRadius) {
           // 吸い込まれた（ブラックホールの表面に触れた）場合
           const swallowDist = planetDef.radius + PLANETS[body.planetIndex].radius + 5;
           if (dist < swallowDist) {
@@ -245,8 +246,8 @@ Events.on(engine, 'beforeUpdate', () => {
             score += PLANETS[body.planetIndex].score;
             scoreEl.innerText = score;
           } else {
-            // ブラックホールに向かって力を加える
-            const forceMagnitude = 0.0005 * body.mass; // 引力の強さを少し上げる
+            // ブラックホールに向かって力を加える（少し引力を弱めてじわじわ吸い込むように）
+            const forceMagnitude = 0.00015 * body.mass; 
             Matter.Body.applyForce(body, body.position, {
               x: (dx / dist) * forceMagnitude,
               y: (dy / dist) * forceMagnitude
