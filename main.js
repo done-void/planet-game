@@ -72,8 +72,10 @@ function updateNextPreview() {
 function addPlanet(x, y, index) {
   const planet = PLANETS[index];
   const body = Bodies.circle(x, y, planet.radius, {
-    restitution: 0.2, // 弾力性
-    friction: 0.1, // 摩擦
+    restitution: 0.3, // 少し弾むように
+    friction: 0.005, // 摩擦を極端に下げて滑りやすく・転がりやすくする
+    frictionStatic: 0.001, // 静止状態からの動き出しを良くする
+    density: 0.002, // 質量を少し調整して重みを持たせる
     render: {
       fillStyle: planet.color, // フォールバック
     },
