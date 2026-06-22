@@ -237,15 +237,16 @@ Events.on(engine, 'beforeUpdate', () => {
         
         // ブラックホールから一定範囲内の惑星を吸い寄せる
         if (dist < 400) { // 吸い込み範囲
-          // 吸い込まれた（ブラックホールの中心付近に到達した）場合
-          if (dist < planetDef.radius * 0.8) {
+          // 吸い込まれた（ブラックホールの表面に触れた）場合
+          const swallowDist = planetDef.radius + PLANETS[body.planetIndex].radius + 5;
+          if (dist < swallowDist) {
             body.isMerging = true; // 削除マーク
             Composite.remove(world, body);
             score += PLANETS[body.planetIndex].score;
             scoreEl.innerText = score;
           } else {
             // ブラックホールに向かって力を加える
-            const forceMagnitude = 0.0003 * body.mass; // 引力の強さ
+            const forceMagnitude = 0.0005 * body.mass; // 引力の強さを少し上げる
             Matter.Body.applyForce(body, body.position, {
               x: (dx / dist) * forceMagnitude,
               y: (dy / dist) * forceMagnitude
