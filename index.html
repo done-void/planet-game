@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>惑星ゲーム (スイカゲーム風)</title>
+    <link rel="stylesheet" href="./style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700&display=swap" rel="stylesheet">
+  </head>
+  <body>
+    <div id="app">
+      <div id="game-container">
+        <!-- Matter.js Canvas -->
+        <div id="ui-layer">
+          <div class="header">
+            <div class="score-board">
+              <span class="label">SCORE</span>
+              <span id="score">0</span>
+            </div>
+            <div class="next-planet">
+              <span class="label">NEXT</span>
+              <div id="next-preview"></div>
+            </div>
+          </div>
+          <div id="game-over-screen" class="hidden">
+            <h1>GAME OVER</h1>
+            <p>Score: <span id="final-score">0</span></p>
+            <button id="retry-btn">もう一度プレイ</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>
