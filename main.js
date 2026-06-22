@@ -44,6 +44,7 @@ let score = 0;
 let nextPlanetIndex = Math.floor(Math.random() * 5); // 0 to 4 (月〜金星あたりが初期出現)
 let currentFalling = null;
 let isGameOver = false;
+let currentX = width / 2;
 const blackHoles = [];
 
 const scoreEl = document.getElementById('score');
@@ -83,19 +84,29 @@ function addPlanet(x, y, index) {
   return body;
 }
 
-// ユーザー操作 (クリックで落下)
-container.addEventListener('click', (e) => {
+// ユーザー操作 (マウス移動とクリック)
+container.addEventListener('mousemove', (e) => {
+  if (isGameOver || currentFalling) return;
+  const rect = container.getBoundingClientRect();
+  let x = e.clientX - rect.left;
+  const planetRadius = PLANETS[nextPlanetIndex].radius;
+  currentX = Math.max(planetRadius, Math.min(width - planetRadius, x));
+});
+
+// タッチ操作対応
+container.addEventListener('touchmove', (e) => {
+  if (isGameOver || currentFalling) return;
+  const rect = container.getBoundingClientRect();
+  let x = e.touches[0].clientX - rect.left;
+  const planetRadius = PLANETS[nextPlanetIndex].radius;
+  currentX = Math.max(planetRadius, Math.min(width - planetRadius, x));
+});
+
+container.addEventListener('click', () => {
   if (isGameOver) return;
   if (currentFalling) return; // 落下中は次を落とせない
   
-  const rect = container.getBoundingClientRect();
-  let x = e.clientX - rect.left;
-  
-  // 壁にめり込まないようにx座標をクランプ
-  const planetRadius = PLANETS[nextPlanetIndex].radius;
-  x = Math.max(planetRadius, Math.min(width - planetRadius, x));
-
-  currentFalling = addPlanet(x, 50, nextPlanetIndex);
+  currentFalling = addPlanet(currentX, 50, nextPlanetIndex);
   
   nextPlanetIndex = Math.floor(Math.random() * 5);
   updateNextPreview();
@@ -186,6 +197,97 @@ Events.on(engine, 'beforeUpdate', () => {
   });
 });
 
+function drawPlanetContent(context, planet, radius) {
+  // Base circle
+  const grad = context.createRadialGradient(-radius*0.3, -radius*0.3, radius*0.1, 0, 0, radius);
+  grad.addColorStop(0, planet.gradient[0]);
+  grad.addColorStop(1, planet.gradient[1]);
+  
+  context.beginPath();
+  context.arc(0, 0, radius, 0, 2 * Math.PI);
+  context.fillStyle = grad;
+  context.fill();
+
+  // Features (模様や環)
+  if (planet.feature === 'craters') {
+    context.fillStyle = 'rgba(0,0,0,0.15)';
+    context.beginPath(); context.arc(radius*0.3, -radius*0.2, radius*0.15, 0, 2*Math.PI); context.fill();
+    context.beginPath(); context.arc(-radius*0.4, radius*0.3, radius*0.2, 0, 2*Math.PI); context.fill();
+    context.beginPath(); context.arc(radius*0.1, radius*0.4, radius*0.1, 0, 2*Math.PI); context.fill();
+  } else if (planet.feature === 'polar_cap') {
+    context.fillStyle = 'rgba(255,255,255,0.6)';
+    context.beginPath(); context.arc(0, -radius*0.8, radius*0.3, 0, 2*Math.PI); context.fill();
+  } else if (planet.feature === 'clouds') {
+    context.fillStyle = 'rgba(255,255,255,0.2)';
+    context.beginPath(); context.ellipse(0, -radius*0.3, radius*0.8, radius*0.15, -0.2, 0, 2*Math.PI); context.fill();
+    context.beginPath(); context.ellipse(0, radius*0.3, radius*0.7, radius*0.2, 0.1, 0, 2*Math.PI); context.fill();
+  } else if (planet.feature === 'earth') {
+    context.fillStyle = 'rgba(76, 175, 80, 0.8)';
+    context.beginPath(); context.arc(-radius*0.2, -radius*0.2, radius*0.4, 0, 2*Math.PI); context.fill();
+    context.beginPath(); context.arc(radius*0.3, radius*0.1, radius*0.3, 0, 2*Math.PI); context.fill();
+  } else if (planet.feature === 'storm') {
+    context.fillStyle = 'rgba(0,0,0,0.2)';
+    context.beginPath(); context.ellipse(-radius*0.3, radius*0.1, radius*0.25, radius*0.15, -0.2, 0, 2*Math.PI); context.fill();
+  } else if (planet.feature === 'stripes') {
+    context.fillStyle = 'rgba(100,50,0,0.2)';
+    context.fillRect(-radius, -radius*0.4, radius*2, radius*0.2);
+    context.fillRect(-radius, radius*0.1, radius*2, radius*0.3);
+    context.fillStyle = 'rgba(255,255,255,0.2)';
+    context.fillRect(-radius, -radius*0.1, radius*2, radius*0.15);
+    context.fillStyle = 'rgba(200,50,0,0.4)';
+    context.beginPath(); context.ellipse(radius*0.3, radius*0.2, radius*0.2, radius*0.1, 0, 0, 2*Math.PI); context.fill();
+  }
+
+  // Face
+  if (!planet.isBlackHole) {
+    context.fillStyle = '#1a1a1a';
+    const eyeOffsetX = radius * 0.35;
+    const eyeOffsetY = -radius * 0.15;
+    const eyeRadius = Math.max(radius * 0.1, 2);
+    
+    context.beginPath();
+    context.arc(-eyeOffsetX, eyeOffsetY, eyeRadius, 0, 2 * Math.PI);
+    context.arc(eyeOffsetX, eyeOffsetY, eyeRadius, 0, 2 * Math.PI);
+    context.fill();
+    
+    context.beginPath();
+    context.arc(0, radius * 0.1, radius * 0.3, 0, Math.PI, false);
+    context.strokeStyle = '#1a1a1a';
+    context.lineWidth = Math.max(radius * 0.05, 1.5);
+    context.stroke();
+    
+    context.fillStyle = 'rgba(255, 100, 100, 0.5)';
+    context.beginPath();
+    context.arc(-eyeOffsetX * 1.2, radius * 0.15, eyeRadius, 0, 2 * Math.PI);
+    context.fill();
+    context.beginPath();
+    context.arc(eyeOffsetX * 1.2, radius * 0.15, eyeRadius, 0, 2 * Math.PI);
+    context.fill();
+  }
+
+  // Rings
+  if (planet.feature === 'ring') {
+    context.beginPath();
+    context.ellipse(0, 0, radius*1.6, radius*0.4, -0.3, 0, 2*Math.PI);
+    context.strokeStyle = 'rgba(230, 220, 200, 0.8)';
+    context.lineWidth = radius * 0.15;
+    context.stroke();
+  } else if (planet.feature === 'ring_vertical') {
+    context.beginPath();
+    context.ellipse(0, 0, radius*1.3, radius*0.2, 1.2, 0, 2*Math.PI);
+    context.strokeStyle = 'rgba(200, 220, 255, 0.6)';
+    context.lineWidth = radius * 0.08;
+    context.stroke();
+  }
+
+  // Outline
+  context.beginPath();
+  context.arc(0, 0, radius, 0, 2 * Math.PI);
+  context.lineWidth = 1;
+  context.strokeStyle = 'rgba(255,255,255,0.3)';
+  context.stroke();
+}
+
 // リッチな描画（グラデーションの適用）
 Events.on(render, 'afterRender', () => {
   const context = render.context;
@@ -201,52 +303,35 @@ Events.on(render, 'afterRender', () => {
       context.translate(x, y);
       context.rotate(body.angle);
       
-      const grad = context.createRadialGradient(-radius*0.3, -radius*0.3, radius*0.1, 0, 0, radius);
-      grad.addColorStop(0, planet.gradient[0]);
-      grad.addColorStop(1, planet.gradient[1]);
-      
-      context.beginPath();
-      context.arc(0, 0, radius, 0, 2 * Math.PI);
-      context.fillStyle = grad;
-      context.fill();
-      
-      // 顔の描画
-      if (!planet.isBlackHole) {
-        context.fillStyle = '#1a1a1a'; // 目の色
-        const eyeOffsetX = radius * 0.35;
-        const eyeOffsetY = -radius * 0.15;
-        const eyeRadius = Math.max(radius * 0.1, 2);
-        
-        // 左目・右目
-        context.beginPath();
-        context.arc(-eyeOffsetX, eyeOffsetY, eyeRadius, 0, 2 * Math.PI);
-        context.arc(eyeOffsetX, eyeOffsetY, eyeRadius, 0, 2 * Math.PI);
-        context.fill();
-        
-        // 口 (ニコッ)
-        context.beginPath();
-        context.arc(0, radius * 0.1, radius * 0.3, 0, Math.PI, false);
-        context.strokeStyle = '#1a1a1a';
-        context.lineWidth = Math.max(radius * 0.05, 1.5);
-        context.stroke();
-        
-        // ほっぺた
-        context.fillStyle = 'rgba(255, 100, 100, 0.5)';
-        context.beginPath();
-        context.arc(-eyeOffsetX * 1.2, radius * 0.15, eyeRadius, 0, 2 * Math.PI);
-        context.fill();
-        context.beginPath();
-        context.arc(eyeOffsetX * 1.2, radius * 0.15, eyeRadius, 0, 2 * Math.PI);
-        context.fill();
-      }
-      
-      context.lineWidth = 1;
-      context.strokeStyle = 'rgba(255,255,255,0.3)';
-      context.stroke();
+      drawPlanetContent(context, planet, radius);
       
       context.restore();
     }
   });
+
+  // 落とす位置のガイドラインとプレビュー
+  if (!currentFalling && !isGameOver) {
+    const planet = PLANETS[nextPlanetIndex];
+    const radius = planet.radius;
+    
+    // ガイドライン
+    context.save();
+    context.beginPath();
+    context.moveTo(currentX, 50);
+    context.lineTo(currentX, height);
+    context.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+    context.lineWidth = 2;
+    context.setLineDash([5, 5]);
+    context.stroke();
+    context.restore();
+
+    // プレビュー惑星
+    context.save();
+    context.translate(currentX, 50);
+    context.globalAlpha = 0.5; // 半透明
+    drawPlanetContent(context, planet, radius);
+    context.restore();
+  }
   
   // デッドラインの描画
   context.beginPath();
