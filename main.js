@@ -401,32 +401,49 @@ function drawPlanetContent(context, planet, radius) {
     context.beginPath(); context.ellipse(radius*0.3, radius*0.2, radius*0.2, radius*0.1, 0, 0, 2*Math.PI); context.fill();
   }
 
-  // Face
-  if (!planet.isBlackHole && !planet.isWhiteHole && !planet.isSupermassive) {
-    context.fillStyle = '#1a1a1a';
-    const eyeOffsetX = radius * 0.35;
-    const eyeOffsetY = -radius * 0.15;
-    const eyeRadius = Math.max(radius * 0.1, 2);
-    
-    context.beginPath();
-    context.arc(-eyeOffsetX, eyeOffsetY, eyeRadius, 0, 2 * Math.PI);
-    context.arc(eyeOffsetX, eyeOffsetY, eyeRadius, 0, 2 * Math.PI);
+  // Face (全ての星・ブラックホール等に顔を描画)
+  const faceColor = planet.isBlackHole ? '#ffffff' : '#1a1a1a';
+  context.fillStyle = faceColor;
+  
+  const eyeOffsetX = radius * 0.35;
+  const eyeOffsetY = -radius * 0.15;
+  const eyeRadius = Math.max(radius * 0.1, 2);
+  
+  // 目
+  context.beginPath();
+  context.arc(-eyeOffsetX, eyeOffsetY, eyeRadius, 0, 2 * Math.PI);
+  context.arc(eyeOffsetX, eyeOffsetY, eyeRadius, 0, 2 * Math.PI);
+  context.fill();
+  
+  // 口
+  context.beginPath();
+  if (planet.isBlackHole) {
+    // ブラックホールは吸い込んでいるような「お」の口にする
+    context.arc(0, radius * 0.15, radius * 0.15, 0, 2 * Math.PI, false);
     context.fill();
-    
-    context.beginPath();
-    context.arc(0, radius * 0.1, radius * 0.3, 0, Math.PI, false);
-    context.strokeStyle = '#1a1a1a';
+  } else if (planet.isWhiteHole) {
+    // ホワイトホールは吐き出しているような口
+    context.arc(0, radius * 0.15, radius * 0.15, 0, 2 * Math.PI, false);
+    context.strokeStyle = faceColor;
     context.lineWidth = Math.max(radius * 0.05, 1.5);
     context.stroke();
-    
-    context.fillStyle = 'rgba(255, 100, 100, 0.5)';
-    context.beginPath();
-    context.arc(-eyeOffsetX * 1.2, radius * 0.15, eyeRadius, 0, 2 * Math.PI);
-    context.fill();
-    context.beginPath();
-    context.arc(eyeOffsetX * 1.2, radius * 0.15, eyeRadius, 0, 2 * Math.PI);
-    context.fill();
+  } else {
+    // 通常の笑顔
+    context.arc(0, radius * 0.1, radius * 0.3, 0, Math.PI, false);
+    context.strokeStyle = faceColor;
+    context.lineWidth = Math.max(radius * 0.05, 1.5);
+    context.stroke();
   }
+  
+  // ほっぺ
+  const blushAlpha = planet.isBlackHole ? 0.7 : 0.5; // 黒背景なら少し濃く
+  context.fillStyle = `rgba(255, 100, 100, ${blushAlpha})`;
+  context.beginPath();
+  context.arc(-eyeOffsetX * 1.2, radius * 0.15, eyeRadius, 0, 2 * Math.PI);
+  context.fill();
+  context.beginPath();
+  context.arc(eyeOffsetX * 1.2, radius * 0.15, eyeRadius, 0, 2 * Math.PI);
+  context.fill();
   // Rings
   if (planet.feature === 'ring') {
     context.beginPath();
