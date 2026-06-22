@@ -173,11 +173,11 @@ Events.on(engine, 'collisionStart', (event) => {
 
     if (bodyA.planetIndex !== undefined && bodyA.planetIndex === bodyB.planetIndex) {
         // 超大質量星(11)以上のインデックスは合体しない
-        if (bodyA.planetIndex >= 11) return;
+        if (bodyA.planetIndex >= 11) continue;
         
         let newIndex = bodyA.planetIndex + 1;
         // 念のための上限チェック
-        if (newIndex >= PLANETS.length) return;
+        if (newIndex >= PLANETS.length) continue;
       
         if (bodyA.isMerging || bodyB.isMerging) continue; // 既に合体処理中ならスキップ
         bodyA.isMerging = true;
@@ -203,7 +203,6 @@ Events.on(engine, 'collisionStart', (event) => {
           newBody.createdAt = Date.now();
           supermassiveStars.push(newBody);
         }
-      }
     }
   }
 });
@@ -428,77 +427,6 @@ function drawPlanetContent(context, planet, radius) {
     context.arc(eyeOffsetX * 1.2, radius * 0.15, eyeRadius, 0, 2 * Math.PI);
     context.fill();
   }
-}
-
-// ======================================
-// 惑星図鑑（Legend）ロジック
-// ======================================
-const infoBtn = document.getElementById('info-button');
-const legendModal = document.getElementById('legend-modal');
-const closeLegendBtn = document.getElementById('close-legend');
-const legendList = document.getElementById('legend-list');
-
-const PLANET_DESCRIPTIONS = {
-  0: "一番最初の小さな星。とっても軽くてよく転がります。",
-  1: "準惑星。月とくっつくとこれになります。",
-  2: "太陽系で一番小さな惑星。クレーターがいっぱい。",
-  3: "赤い惑星。氷の帽子（極冠）を被っています。",
-  4: "地球の兄弟星。とても熱い雲に覆われています。",
-  5: "我々の故郷！青い海と緑の大地が特徴です。",
-  6: "青く輝く巨大な氷の惑星。",
-  7: "横倒しで自転している氷の惑星。うっすらとした環があります。",
-  8: "美しく巨大な環を持つガス惑星。とても軽いです。",
-  9: "太陽系最大の惑星。大赤斑とシマシマ模様が特徴。",
-  10: "燃え盛る巨大な恒星。これ同士をくっつけると…？",
-  11: "【超大質量星】太陽の合体で誕生。10秒後に超新星爆発を起こします。",
-  12: "【ブラックホール】超新星爆発の跡地に誕生。10秒間、周りの星を飲み込みます！",
-  13: "【ホワイトホール】（お邪魔）5%で降ってくる。5秒間、小さな星を吐き出して盤面を荒らします。",
-  14: "【青色超巨星】（お助け）5%で降ってくる寿命間近の星。10秒後に爆発し、ミニブラックホールになります。",
-  15: "【ミニブラックホール】青色超巨星の爆発跡地に誕生。5秒間、周囲の星を吸い込みます！"
-};
-
-function initLegend() {
-  legendList.innerHTML = '';
-  PLANETS.forEach((planet, index) => {
-    const item = document.createElement('div');
-    item.className = 'legend-item';
-    
-    // アイコン描画用Canvas
-    const cvs = document.createElement('canvas');
-    cvs.width = 60;
-    cvs.height = 60;
-    const ctx = cvs.getContext('2d');
-    ctx.translate(30, 30); // 中央を原点に
-    
-    // 描画用の仮スケール（最大サイズをはみ出さないように）
-    const scale = planet.radius > 60 ? 25 / planet.radius : 1;
-    ctx.scale(scale, scale);
-    drawPlanetContent(ctx, planet, planet.radius);
-    ctx.setTransform(1, 0, 0, 1, 0, 0); // リセット
-
-    const textDiv = document.createElement('div');
-    textDiv.className = 'legend-text';
-    textDiv.innerHTML = `<strong>${planet.name}</strong><br><span>${PLANET_DESCRIPTIONS[index] || ""}</span>`;
-
-    item.appendChild(cvs);
-    item.appendChild(textDiv);
-    legendList.appendChild(item);
-  });
-}
-
-infoBtn.addEventListener('click', () => {
-  if (legendList.innerHTML === '') initLegend();
-  legendModal.classList.remove('hidden');
-  Runner.stop(runner); // 図鑑を開いている間は物理演算をポーズ
-});
-
-closeLegendBtn.addEventListener('click', () => {
-  legendModal.classList.add('hidden');
-  if (!isGameOver) {
-    Runner.run(runner, engine); // 再開
-  }
-});
-
   // Rings
   if (planet.feature === 'ring') {
     context.beginPath();
