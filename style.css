@@ -36,14 +36,15 @@ body, html {
 
 #game-container {
   position: relative;
-  width: 400px;
-  height: 600px;
+  width: min(100vw, 400px, calc(90svh * 2 / 3));
+  aspect-ratio: 2 / 3;
   background: rgba(0, 0, 0, 0.6);
   border: 2px solid rgba(255, 255, 255, 0.2);
   border-radius: 20px;
   overflow: hidden;
   box-shadow: 0 0 40px rgba(102, 252, 241, 0.2);
   backdrop-filter: blur(10px);
+  flex-shrink: 0;
 }
 
 canvas {

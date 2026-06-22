@@ -14,8 +14,8 @@ const engine = Engine.create();
 const world = engine.world;
 
 const container = document.getElementById('game-container');
-const width = container.clientWidth;
-const height = container.clientHeight;
+const width = 400; // 論理的なゲーム領域は常に固定
+const height = 600;
 
 const render = Render.create({
   element: container,
@@ -88,7 +88,8 @@ function addPlanet(x, y, index) {
 
 function updateCurrentX(clientX) {
   const rect = container.getBoundingClientRect();
-  let x = clientX - rect.left;
+  const scaleX = width / rect.width; // CSSによる縮小率を補正
+  let x = (clientX - rect.left) * scaleX;
   const planetRadius = PLANETS[nextPlanetIndex].radius;
   currentX = Math.max(planetRadius, Math.min(width - planetRadius, x));
 }
