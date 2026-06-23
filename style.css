@@ -23,6 +23,7 @@ body, html {
   width: 100%;
   height: 100%;
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
   /* 宇宙の背景 */
@@ -37,7 +38,7 @@ body, html {
 
 #game-container {
   position: relative;
-  width: min(100vw, 400px, calc(90svh * 2 / 3));
+  width: min(100vw, 400px, calc(70svh * 2 / 3)); /* UIのスペースを考慮し高さを少し縮小 */
   aspect-ratio: 2 / 3;
   background: rgba(0, 0, 0, 0.6);
   border: 2px solid rgba(255, 255, 255, 0.2);
@@ -71,10 +72,13 @@ body, html {
 .header {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-  padding: 15px;
+  align-items: center;
+  width: min(100vw, 400px, calc(70svh * 2 / 3)); /* containerと同じ幅 */
+  box-sizing: border-box;
+  padding: 10px 0; /* 左右のpaddingは不要 */
   gap: 10px;
   pointer-events: auto;
+  z-index: 10;
 }
 
 .score-board, .next-planet {
@@ -116,7 +120,6 @@ body, html {
   align-items: center;
   justify-content: center;
   height: fit-content;
-  margin-top: 15px;
 }
 
 .sos-btn:hover {

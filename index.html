@@ -9,20 +9,21 @@
   </head>
   <body>
     <div id="app">
+      <div class="header" id="top-ui">
+        <div class="score-board">
+          <span class="label">SCORE</span>
+          <span id="score">0</span>
+        </div>
+        <button id="sos-button" class="sos-btn">🆘 お助け</button>
+        <div class="next-planet">
+          <span class="label">NEXT</span>
+          <canvas id="next-preview-canvas" width="60" height="60"></canvas>
+        </div>
+      </div>
+
       <div id="game-container">
         <!-- Matter.js Canvas -->
         <div id="ui-layer">
-          <div class="header">
-            <div class="score-board">
-              <span class="label">SCORE</span>
-              <span id="score">0</span>
-            </div>
-            <button id="sos-button" class="sos-btn">🆘 お助け</button>
-            <div class="next-planet">
-              <span class="label">NEXT</span>
-              <canvas id="next-preview-canvas" width="60" height="60"></canvas>
-            </div>
-          </div>
           <div id="game-over-screen" class="hidden">
             <h1>GAME OVER</h1>
             <p>Score: <span id="final-score">0</span></p>
