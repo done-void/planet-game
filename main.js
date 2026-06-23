@@ -2,6 +2,22 @@ import './style.css';
 import Matter from 'matter-js';
 import { PLANETS } from './planets.js';
 import { AdMob, BannerAdSize, BannerAdPosition } from '@capacitor-community/admob';
+import * as Audio from './audio.js';
+
+// DOM Elements
+const container = document.getElementById('game-container');
+const muteButton = document.getElementById('mute-button');
+
+// Audio Initialization
+if (muteButton) {
+  muteButton.addEventListener('click', () => {
+    const isMuted = Audio.toggleMute();
+    muteButton.innerText = isMuted ? '🔇 BGM' : '🔊 BGM';
+  });
+}
+document.body.addEventListener('pointerdown', () => {
+  Audio.initAudio();
+}, { once: true });
 
 // AdMob Initialization
 async function initAdMob() {
@@ -80,7 +96,7 @@ const Engine = Matter.Engine,
 const engine = Engine.create();
 const world = engine.world;
 
-const container = document.getElementById('game-container');
+
 const width = 400; // 論理的なゲーム領域は常に固定
 const height = 600;
 
@@ -190,6 +206,7 @@ function triggerDrop() {
   if (isGameOver || currentFalling) return;
   
   currentFalling = addPlanet(currentX, 50, currentPlanetIndex);
+  Audio.playDropSound(); // 落下音
   
   if (PLANETS[currentPlanetIndex].isItem) {
     currentFalling.createdAt = Date.now();
@@ -273,6 +290,7 @@ Events.on(engine, 'collisionStart', (event) => {
         scoreEl.innerText = score;
 
         const newBody = addPlanet(newX, newY, newIndex);
+        Audio.playMergeSound(newIndex); // 合体音
         
         // ブラックホールが生成された場合、特別リストに追加
         if (PLANETS[newIndex].isBlackHole && !PLANETS[newIndex].isItem) {

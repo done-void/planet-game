@@ -196,12 +196,11 @@ body, html {
 }
 
 /* =========================================
-   Legend / Info Button UI (Mobile Optimized)
+   Floating Buttons UI (Mobile Optimized)
    ========================================= */
-#info-button {
+.floating-btn {
   position: absolute;
   bottom: calc(env(safe-area-inset-bottom) + 65px);
-  right: 15px;
   background: rgba(0, 0, 0, 0.4);
   border: 1px solid rgba(255, 255, 255, 0.4);
   border-radius: 8px;
@@ -215,9 +214,17 @@ body, html {
   transition: all 0.2s;
 }
 
-#info-button:hover {
+.floating-btn:hover {
   background: rgba(255, 255, 255, 0.2);
   transform: scale(1.05);
+}
+
+#info-button {
+  right: 15px;
+}
+
+#mute-button {
+  right: 95px; /* 図鑑ボタンの左に配置 */
 }
 
 .modal {
