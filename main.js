@@ -1,7 +1,45 @@
 import './style.css';
 import Matter from 'matter-js';
 import { PLANETS } from './planets.js';
+import { AdMob, BannerAdSize, BannerAdPosition } from '@capacitor-community/admob';
 
+// AdMob Initialization
+async function initAdMob() {
+  try {
+    await AdMob.initialize({});
+    
+    // バナー広告の表示 (下部)
+    const bannerOptions = {
+      adId: 'ca-app-pub-3940256099942544/6300978111', // Google Test Banner ID
+      adSize: BannerAdSize.BANNER,
+      position: BannerAdPosition.BOTTOM_CENTER,
+      margin: 0,
+      isTesting: true
+    };
+    await AdMob.showBanner(bannerOptions);
+    
+  } catch (error) {
+    console.log("AdMob init failed (might be running in web without native bridge):", error);
+  }
+}
+initAdMob();
+
+// インタースティシャル広告の準備と表示関数
+async function showInterstitialAd() {
+  try {
+    const options = {
+      adId: 'ca-app-pub-3940256099942544/1033173712', // Google Test Interstitial ID
+      isTesting: true
+    };
+    await AdMob.prepareInterstitial(options);
+    await AdMob.showInterstitial();
+  } catch (error) {
+    console.log("Interstitial ad failed:", error);
+  }
+}
+
+// プレイ回数のトラッキング用
+let gamesPlayed = 0;
 // Setup engine
 const Engine = Matter.Engine,
       Render = Matter.Render,
@@ -572,6 +610,11 @@ function setGameOver() {
 
 // リトライ処理
 document.getElementById('retry-btn').addEventListener('click', () => {
+  gamesPlayed++;
+  if (gamesPlayed % 3 === 0) {
+    showInterstitialAd();
+  }
+
   Composite.clear(world);
   Engine.clear(engine);
   Composite.add(world, [ground, leftWall, rightWall]); // 壁を再配置
