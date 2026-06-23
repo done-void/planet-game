@@ -80,18 +80,42 @@ canvas {
   align-items: center;
 }
 
-.label {
-  font-size: 12px;
+.score-board .label, .next-planet .label {
+  display: block;
+  font-size: 14px;
   color: var(--text-color);
-  letter-spacing: 2px;
   margin-bottom: 5px;
+  font-weight: 700;
 }
 
 #score {
-  font-size: 24px;
+  font-size: 28px;
+  color: var(--accent-color);
   font-weight: 700;
-  color: #fff;
-  text-shadow: 0 0 10px var(--accent-color);
+}
+
+.sos-btn {
+  background-color: rgba(255, 60, 60, 0.2);
+  color: #ff6b6b;
+  border: 1px solid rgba(255, 60, 60, 0.5);
+  padding: 8px 12px;
+  border-radius: 12px;
+  font-weight: bold;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sos-btn:hover {
+  background-color: rgba(255, 60, 60, 0.4);
+  transform: scale(1.05);
+}
+
+.sos-btn:active {
+  transform: scale(0.95);
 }
 
 #next-preview {

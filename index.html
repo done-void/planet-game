@@ -17,6 +17,7 @@
               <span class="label">SCORE</span>
               <span id="score">0</span>
             </div>
+            <button id="sos-button" class="sos-btn">🆘 お助け</button>
             <div class="next-planet">
               <span class="label">NEXT</span>
               <canvas id="next-preview-canvas" width="60" height="60"></canvas>
@@ -26,6 +27,18 @@
             <h1>GAME OVER</h1>
             <p>Score: <span id="final-score">0</span></p>
             <button id="retry-btn">もう一度遊ぶ</button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Modals -->
+      <div id="sos-modal" class="modal hidden">
+        <div class="modal-content">
+          <h2>🆘 お助けアイテム召喚</h2>
+          <p>短い動画広告を視聴して、強力なお助けアイテムを次に降らせますか？</p>
+          <div class="modal-buttons" style="display:flex; gap:10px; justify-content:center; margin-top:20px;">
+            <button id="watch-ad-btn" style="background:#66fcf1; color:#0b0c10; border:none; padding:10px 20px; border-radius:10px; cursor:pointer; font-weight:bold;">動画を見る</button>
+            <button id="cancel-sos-btn" style="background:#333; color:#fff; border:none; padding:10px 20px; border-radius:10px; cursor:pointer;">やめる</button>
           </div>
         </div>
       </div>

@@ -17,6 +17,16 @@ async function initAdMob() {
       isTesting: true
     };
     await AdMob.showBanner(bannerOptions);
+
+    // リワード広告（動画）のリスナー登録
+    AdMob.addListener('rewardedVideoUserDidEarnReward', () => {
+      // 視聴完了時の処理: 青色超巨星(14)かミニブラックホール(15)をランダムで付与
+      const isSupernova = Math.random() < 0.5;
+      currentPlanetIndex = isSupernova ? 14 : 15;
+      // 強力なアイテムなので、次のNEXTは通常のものに戻しておく（連発防止）
+      nextPlanetIndex = getNextPlanetIndex();
+      updateNextPreview();
+    });
     
   } catch (error) {
     console.log("AdMob init failed (might be running in web without native bridge):", error);
@@ -35,6 +45,25 @@ async function showInterstitialAd() {
     await AdMob.showInterstitial();
   } catch (error) {
     console.log("Interstitial ad failed:", error);
+  }
+}
+
+// リワード広告の表示関数
+async function showRewardVideoAd() {
+  try {
+    const options = {
+      adId: 'ca-app-pub-3940256099942544/5224354917', // Google Test Rewarded Video ID
+      isTesting: true
+    };
+    await AdMob.prepareRewardVideoAd(options);
+    await AdMob.showRewardVideoAd();
+  } catch (error) {
+    console.log("Reward video ad failed:", error);
+    // Web環境でのテスト用（動画が見れない場合は直接付与）
+    const isSupernova = Math.random() < 0.5;
+    currentPlanetIndex = isSupernova ? 14 : 15;
+    nextPlanetIndex = getNextPlanetIndex();
+    updateNextPreview();
   }
 }
 
@@ -480,49 +509,251 @@ function drawPlanetContent(context, planet, radius) {
     context.beginPath(); context.ellipse(radius*0.3, radius*0.2, radius*0.2, radius*0.1, 0, 0, 2*Math.PI); context.fill();
   }
 
-  // Face (全ての星・ブラックホール等に顔を描画)
-  const faceColor = planet.isBlackHole ? '#ffffff' : '#1a1a1a';
+  // Face (全ての星に個性的な顔を描画)
+  const faceColor = (planet.isBlackHole || planet.faceType === 'sparkle') ? '#ffffff' : '#1a1a1a';
   context.fillStyle = faceColor;
+  context.strokeStyle = faceColor;
   
   const eyeOffsetX = radius * 0.35;
   const eyeOffsetY = -radius * 0.15;
   const eyeRadius = Math.max(radius * 0.1, 2);
+  const lineWidth = Math.max(radius * 0.05, 1.5);
+  context.lineWidth = lineWidth;
+  context.lineCap = 'round';
   
-  // 目
-  context.beginPath();
-  context.arc(-eyeOffsetX, eyeOffsetY, eyeRadius, 0, 2 * Math.PI);
-  context.arc(eyeOffsetX, eyeOffsetY, eyeRadius, 0, 2 * Math.PI);
-  context.fill();
-  
-  // 口
-  context.beginPath();
-  if (planet.isBlackHole) {
-    // ブラックホールは吸い込んでいるような「お」の口にする
-    context.arc(0, radius * 0.15, radius * 0.15, 0, 2 * Math.PI, false);
+  // ほっぺ（共通）
+  if (planet.faceType !== 'sunglasses' && planet.faceType !== 'blackhole' && planet.faceType !== 'whitehole') {
+    const blushAlpha = planet.isBlackHole ? 0.7 : 0.5;
+    context.fillStyle = `rgba(255, 100, 100, ${blushAlpha})`;
+    context.beginPath();
+    context.arc(-eyeOffsetX * 1.2, radius * 0.15, eyeRadius, 0, 2 * Math.PI);
     context.fill();
-  } else if (planet.isWhiteHole) {
-    // ホワイトホールは吐き出しているような口
-    context.arc(0, radius * 0.15, radius * 0.15, 0, 2 * Math.PI, false);
-    context.strokeStyle = faceColor;
-    context.lineWidth = Math.max(radius * 0.05, 1.5);
-    context.stroke();
-  } else {
-    // 通常の笑顔
-    context.arc(0, radius * 0.1, radius * 0.3, 0, Math.PI, false);
-    context.strokeStyle = faceColor;
-    context.lineWidth = Math.max(radius * 0.05, 1.5);
-    context.stroke();
+    context.beginPath();
+    context.arc(eyeOffsetX * 1.2, radius * 0.15, eyeRadius, 0, 2 * Math.PI);
+    context.fill();
+    context.fillStyle = faceColor; // 戻す
   }
-  
-  // ほっぺ
-  const blushAlpha = planet.isBlackHole ? 0.7 : 0.5; // 黒背景なら少し濃く
-  context.fillStyle = `rgba(255, 100, 100, ${blushAlpha})`;
-  context.beginPath();
-  context.arc(-eyeOffsetX * 1.2, radius * 0.15, eyeRadius, 0, 2 * Math.PI);
-  context.fill();
-  context.beginPath();
-  context.arc(eyeOffsetX * 1.2, radius * 0.15, eyeRadius, 0, 2 * Math.PI);
-  context.fill();
+
+  // 表情分岐
+  switch (planet.faceType) {
+    case 'sleepy':
+      // 目: 横棒（- -）
+      context.beginPath();
+      context.moveTo(-eyeOffsetX - eyeRadius, eyeOffsetY);
+      context.lineTo(-eyeOffsetX + eyeRadius, eyeOffsetY);
+      context.moveTo(eyeOffsetX - eyeRadius, eyeOffsetY);
+      context.lineTo(eyeOffsetX + eyeRadius, eyeOffsetY);
+      context.stroke();
+      // 口: 小さい口
+      context.beginPath();
+      context.arc(0, radius * 0.2, eyeRadius * 0.5, 0, 2 * Math.PI);
+      context.fill();
+      break;
+
+    case 'angry':
+      // 目: （> <）
+      context.beginPath();
+      context.moveTo(-eyeOffsetX - eyeRadius, eyeOffsetY - eyeRadius);
+      context.lineTo(-eyeOffsetX, eyeOffsetY);
+      context.lineTo(-eyeOffsetX - eyeRadius, eyeOffsetY + eyeRadius);
+      context.moveTo(eyeOffsetX + eyeRadius, eyeOffsetY - eyeRadius);
+      context.lineTo(eyeOffsetX, eyeOffsetY);
+      context.lineTo(eyeOffsetX + eyeRadius, eyeOffsetY + eyeRadius);
+      context.stroke();
+      // 口: への字
+      context.beginPath();
+      context.moveTo(-eyeRadius, radius * 0.2 + eyeRadius);
+      context.lineTo(0, radius * 0.2);
+      context.lineTo(eyeRadius, radius * 0.2 + eyeRadius);
+      context.stroke();
+      break;
+
+    case 'wink':
+      // 左目: パッチリ, 右目: ウインク（<）
+      context.beginPath();
+      context.arc(-eyeOffsetX, eyeOffsetY, eyeRadius, 0, 2 * Math.PI);
+      context.fill();
+      context.beginPath();
+      context.moveTo(eyeOffsetX + eyeRadius, eyeOffsetY - eyeRadius);
+      context.lineTo(eyeOffsetX, eyeOffsetY);
+      context.lineTo(eyeOffsetX + eyeRadius, eyeOffsetY + eyeRadius);
+      context.stroke();
+      // 口: ニッコリ
+      context.beginPath();
+      context.arc(0, radius * 0.1, radius * 0.25, 0, Math.PI, false);
+      context.stroke();
+      break;
+
+    case 'smile':
+      // 目: ニッコリ（^ ^）
+      context.beginPath();
+      context.arc(-eyeOffsetX, eyeOffsetY + eyeRadius, eyeRadius, Math.PI, 0, false);
+      context.stroke();
+      context.beginPath();
+      context.arc(eyeOffsetX, eyeOffsetY + eyeRadius, eyeRadius, Math.PI, 0, false);
+      context.stroke();
+      // 口: 大きく開けた笑顔
+      context.beginPath();
+      context.arc(0, radius * 0.05, radius * 0.25, 0, Math.PI, false);
+      context.fillStyle = 'rgba(255,100,100,0.8)';
+      context.fill();
+      context.stroke();
+      context.fillStyle = faceColor;
+      break;
+
+    case 'laugh':
+      // 目: 通常
+      context.beginPath();
+      context.arc(-eyeOffsetX, eyeOffsetY, eyeRadius, 0, 2 * Math.PI);
+      context.arc(eyeOffsetX, eyeOffsetY, eyeRadius, 0, 2 * Math.PI);
+      context.fill();
+      // 口: 大きな丸
+      context.beginPath();
+      context.ellipse(0, radius * 0.15, radius * 0.2, radius * 0.25, 0, 0, 2 * Math.PI);
+      context.fill();
+      break;
+
+    case 'sunglasses':
+      // サングラス
+      context.fillStyle = '#111';
+      context.beginPath();
+      context.moveTo(-radius * 0.6, eyeOffsetY - eyeRadius * 1.5);
+      context.lineTo(-radius * 0.1, eyeOffsetY - eyeRadius * 1.5);
+      context.lineTo(0, eyeOffsetY + eyeRadius * 1.5);
+      context.lineTo(-radius * 0.5, eyeOffsetY + eyeRadius * 1.5);
+      context.fill();
+      context.beginPath();
+      context.moveTo(radius * 0.1, eyeOffsetY - eyeRadius * 1.5);
+      context.lineTo(radius * 0.6, eyeOffsetY - eyeRadius * 1.5);
+      context.lineTo(radius * 0.5, eyeOffsetY + eyeRadius * 1.5);
+      context.lineTo(0, eyeOffsetY + eyeRadius * 1.5);
+      context.fill();
+      // テンプル（つる）
+      context.beginPath();
+      context.moveTo(-radius * 0.6, eyeOffsetY - eyeRadius);
+      context.lineTo(-radius * 0.8, eyeOffsetY - eyeRadius * 2);
+      context.moveTo(radius * 0.6, eyeOffsetY - eyeRadius);
+      context.lineTo(radius * 0.8, eyeOffsetY - eyeRadius * 2);
+      context.stroke();
+      // 口: ニヤリ
+      context.beginPath();
+      context.moveTo(-radius * 0.1, radius * 0.2);
+      context.lineTo(radius * 0.2, radius * 0.15);
+      context.stroke();
+      context.fillStyle = faceColor;
+      break;
+
+    case 'surprised':
+      // 目: 見開く
+      context.beginPath();
+      context.arc(-eyeOffsetX, eyeOffsetY, eyeRadius * 1.5, 0, 2 * Math.PI);
+      context.arc(eyeOffsetX, eyeOffsetY, eyeRadius * 1.5, 0, 2 * Math.PI);
+      context.stroke();
+      context.beginPath();
+      context.arc(-eyeOffsetX, eyeOffsetY, eyeRadius * 0.5, 0, 2 * Math.PI);
+      context.arc(eyeOffsetX, eyeOffsetY, eyeRadius * 0.5, 0, 2 * Math.PI);
+      context.fill();
+      // 口: 小さな点
+      context.beginPath();
+      context.arc(0, radius * 0.2, eyeRadius * 0.8, 0, 2 * Math.PI);
+      context.stroke();
+      break;
+
+    case 'chill':
+      // 目: 半目
+      context.beginPath();
+      context.arc(-eyeOffsetX, eyeOffsetY, eyeRadius, Math.PI, 0, false);
+      context.lineTo(-eyeOffsetX - eyeRadius, eyeOffsetY);
+      context.fill();
+      context.beginPath();
+      context.arc(eyeOffsetX, eyeOffsetY, eyeRadius, Math.PI, 0, false);
+      context.lineTo(eyeOffsetX - eyeRadius, eyeOffsetY);
+      context.fill();
+      // 口: への字
+      context.beginPath();
+      context.arc(0, radius * 0.2, radius * 0.2, Math.PI * 1.1, Math.PI * 1.9, false);
+      context.stroke();
+      break;
+
+    case 'smug':
+      // 目: ジト目
+      context.beginPath();
+      context.arc(-eyeOffsetX, eyeOffsetY, eyeRadius, 0, Math.PI, false);
+      context.fill();
+      context.beginPath();
+      context.arc(eyeOffsetX, eyeOffsetY, eyeRadius, 0, Math.PI, false);
+      context.fill();
+      // 口: 片方あがる
+      context.beginPath();
+      context.moveTo(-radius * 0.2, radius * 0.2);
+      context.quadraticCurveTo(0, radius * 0.25, radius * 0.2, radius * 0.1);
+      context.stroke();
+      break;
+      
+    case 'sparkle':
+      // 目: キラキラ（十字星）
+      const drawStar = (x, y, r) => {
+        context.beginPath();
+        context.moveTo(x, y - r);
+        context.quadraticCurveTo(x, y, x + r, y);
+        context.quadraticCurveTo(x, y, x, y + r);
+        context.quadraticCurveTo(x, y, x - r, y);
+        context.quadraticCurveTo(x, y, x, y - r);
+        context.fill();
+      };
+      drawStar(-eyeOffsetX, eyeOffsetY, eyeRadius * 2);
+      drawStar(eyeOffsetX, eyeOffsetY, eyeRadius * 2);
+      // 口: 笑顔
+      context.beginPath();
+      context.arc(0, radius * 0.1, radius * 0.2, 0, Math.PI, false);
+      context.stroke();
+      break;
+
+    case 'blackhole':
+      // 目: 赤い光
+      context.shadowColor = '#ff0000';
+      context.shadowBlur = 15;
+      context.fillStyle = '#ff3333';
+      context.beginPath();
+      context.arc(-eyeOffsetX, eyeOffsetY, eyeRadius, 0, 2 * Math.PI);
+      context.arc(eyeOffsetX, eyeOffsetY, eyeRadius, 0, 2 * Math.PI);
+      context.fill();
+      context.shadowBlur = 0; // リセット
+      // 口: 吸い込む「お」
+      context.fillStyle = faceColor;
+      context.beginPath();
+      context.arc(0, radius * 0.15, radius * 0.15, 0, 2 * Math.PI, false);
+      context.fill();
+      break;
+
+    case 'whitehole':
+      // 目: 青い光
+      context.shadowColor = '#00ffff';
+      context.shadowBlur = 15;
+      context.fillStyle = '#ccffff';
+      context.beginPath();
+      context.arc(-eyeOffsetX, eyeOffsetY, eyeRadius, 0, 2 * Math.PI);
+      context.arc(eyeOffsetX, eyeOffsetY, eyeRadius, 0, 2 * Math.PI);
+      context.fill();
+      context.shadowBlur = 0;
+      // 口: 吐き出す
+      context.beginPath();
+      context.arc(0, radius * 0.15, radius * 0.15, 0, 2 * Math.PI, false);
+      context.stroke();
+      break;
+
+    case 'cute':
+    default:
+      // 通常の可愛い顔
+      context.beginPath();
+      context.arc(-eyeOffsetX, eyeOffsetY, eyeRadius, 0, 2 * Math.PI);
+      context.arc(eyeOffsetX, eyeOffsetY, eyeRadius, 0, 2 * Math.PI);
+      context.fill();
+      context.beginPath();
+      context.arc(0, radius * 0.1, radius * 0.25, 0, Math.PI, false);
+      context.stroke();
+      break;
+  }
   // Rings
   if (planet.feature === 'ring') {
     context.beginPath();
@@ -703,4 +934,34 @@ closeLegendBtn.addEventListener('click', () => {
   if (!isGameOver) {
     Runner.run(runner, engine); // 再開
   }
+});
+
+// ======================================
+// お助けアイテム（SOS）ロジック
+// ======================================
+const sosBtn = document.getElementById('sos-button');
+const sosModal = document.getElementById('sos-modal');
+const watchAdBtn = document.getElementById('watch-ad-btn');
+const cancelSosBtn = document.getElementById('cancel-sos-btn');
+
+sosBtn.addEventListener('click', () => {
+  if (isGameOver) return;
+  sosModal.classList.remove('hidden');
+  Runner.stop(runner); // 物理演算をポーズ
+});
+
+cancelSosBtn.addEventListener('click', () => {
+  sosModal.classList.add('hidden');
+  if (!isGameOver) {
+    Runner.run(runner, engine); // 再開
+  }
+});
+
+watchAdBtn.addEventListener('click', () => {
+  sosModal.classList.add('hidden');
+  if (!isGameOver) {
+    Runner.run(runner, engine); // 物理演算再開
+  }
+  // 広告を表示
+  showRewardVideoAd();
 });
