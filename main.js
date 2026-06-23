@@ -226,9 +226,10 @@ function drawPreviewOnCanvas(canvasId, planetDef, size, isLocked) {
 }
 
 function updateNextPreview() {
-  drawPreviewOnCanvas('next-preview-canvas', PLANETS[nextPlanetsQueue[0]], 60, false);
-  drawPreviewOnCanvas('next-preview-canvas-2', PLANETS[nextPlanetsQueue[1]], 30, !isFutureRevealed);
-  drawPreviewOnCanvas('next-preview-canvas-3', PLANETS[nextPlanetsQueue[2]], 30, !isFutureRevealed);
+  drawPreviewOnCanvas('current-preview-canvas', PLANETS[currentPlanetIndex], 50, false);
+  drawPreviewOnCanvas('next-preview-canvas', PLANETS[nextPlanetsQueue[0]], 25, false);
+  drawPreviewOnCanvas('next-preview-canvas-2', PLANETS[nextPlanetsQueue[1]], 25, !isFutureRevealed);
+  drawPreviewOnCanvas('next-preview-canvas-3', PLANETS[nextPlanetsQueue[2]], 25, !isFutureRevealed);
 }
 
 function addPlanet(x, y, index) {

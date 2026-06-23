@@ -21,13 +21,17 @@
           </div>
         </div>
         <button id="sos-button" class="sos-btn">🆘 お助け</button>
-        <div class="next-planet">
-          <span class="label" style="text-align: center; width: 100%;">NEXT</span>
-          <div style="display: flex; align-items: center; gap: 5px;">
-            <canvas id="next-preview-canvas" width="60" height="60"></canvas>
-            <div id="future-previews" style="display: flex; flex-direction: column; gap: 5px;">
-              <canvas id="next-preview-canvas-2" width="30" height="30"></canvas>
-              <canvas id="next-preview-canvas-3" width="30" height="30"></canvas>
+        <div class="next-planet" style="display: flex; align-items: flex-start; gap: 10px;">
+          <div style="display: flex; flex-direction: column; align-items: center;">
+            <span class="label" style="text-align: center; font-size: 10px; margin-bottom: 2px;">手持ち</span>
+            <canvas id="current-preview-canvas" width="50" height="50"></canvas>
+          </div>
+          <div style="display: flex; flex-direction: column; align-items: center;">
+            <span class="label" style="text-align: center; font-size: 10px; margin-bottom: 2px;">NEXT</span>
+            <div id="future-previews" style="display: flex; flex-direction: column; gap: 3px;">
+              <canvas id="next-preview-canvas" width="25" height="25"></canvas>
+              <canvas id="next-preview-canvas-2" width="25" height="25"></canvas>
+              <canvas id="next-preview-canvas-3" width="25" height="25"></canvas>
             </div>
           </div>
         </div>
