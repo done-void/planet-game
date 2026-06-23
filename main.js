@@ -39,6 +39,21 @@ const rightWall = Bodies.rectangle(width + 30, height / 2, 60, height * 2, { isS
 
 Composite.add(world, [ground, leftWall, rightWall]);
 
+// Game Config (Constants)
+const GAME_CONFIG = {
+  supermassiveLifespan: 10000,
+  supernovaRadius: 400,
+  supernovaForceMultiplier: 0.0003,
+  blackHoleLifespanNormal: 10000,
+  blackHoleLifespanMini: 5000,
+  blackHolePullForce: 0.00010,
+  whiteHoleLifespan: 5000,
+  whiteHolePushForce: 0.0002,
+  whiteHolePushRadius: 300,
+  whiteHoleSpitInterval: 500,
+  whiteHoleSpitSpeed: 8
+};
+
 // Game State
 let score = 0;
 
@@ -52,6 +67,7 @@ function getNextPlanetIndex() {
   return Math.floor(Math.random() * 5); // 通常の月〜金星
 }
 
+let currentPlanetIndex = getNextPlanetIndex();
 let nextPlanetIndex = getNextPlanetIndex();
 let currentFalling = null;
 let isGameOver = false;
@@ -61,25 +77,21 @@ const whiteHoles = [];
 const supermassiveStars = [];
 
 const scoreEl = document.getElementById('score');
-const nextPreviewEl = document.getElementById('next-preview');
+const nextPreviewCanvas = document.getElementById('next-preview-canvas');
 
 function updateNextPreview() {
+  if (!nextPreviewCanvas) return;
   const planet = PLANETS[nextPlanetIndex];
-  nextPreviewEl.style.background = `radial-gradient(circle at 30% 30%, ${planet.gradient[0]}, ${planet.gradient[1]})`;
+  const ctx = nextPreviewCanvas.getContext('2d');
+  ctx.clearRect(0, 0, 60, 60);
   
-  if (!planet.isBlackHole) {
-    nextPreviewEl.innerHTML = `
-      <div style="position: relative; width: 100%; height: 100%;">
-        <div style="position: absolute; top: 30%; left: 25%; width: 12%; height: 12%; background: #1a1a1a; border-radius: 50%;"></div>
-        <div style="position: absolute; top: 30%; right: 25%; width: 12%; height: 12%; background: #1a1a1a; border-radius: 50%;"></div>
-        <div style="position: absolute; top: 50%; left: 35%; width: 30%; height: 20%; border-bottom: 2px solid #1a1a1a; border-radius: 50%;"></div>
-        <div style="position: absolute; top: 45%; left: 15%; width: 15%; height: 15%; background: rgba(255, 100, 100, 0.5); border-radius: 50%;"></div>
-        <div style="position: absolute; top: 45%; right: 15%; width: 15%; height: 15%; background: rgba(255, 100, 100, 0.5); border-radius: 50%;"></div>
-      </div>
-    `;
-  } else {
-    nextPreviewEl.innerHTML = '';
-  }
+  ctx.save();
+  ctx.translate(30, 30);
+  // 少し大きめの星は縮小して枠内に収める
+  const scale = planet.radius > 60 ? 25 / planet.radius : 1;
+  ctx.scale(scale, scale);
+  drawPlanetContent(ctx, planet, planet.radius);
+  ctx.restore();
 }
 
 function addPlanet(x, y, index) {
@@ -103,23 +115,25 @@ function updateCurrentX(clientX) {
   const rect = container.getBoundingClientRect();
   const scaleX = width / rect.width; // CSSによる縮小率を補正
   let x = (clientX - rect.left) * scaleX;
-  const planetRadius = PLANETS[nextPlanetIndex].radius;
+  const planetRadius = PLANETS[currentPlanetIndex].radius;
   currentX = Math.max(planetRadius, Math.min(width - planetRadius, x));
 }
 
 function triggerDrop() {
   if (isGameOver || currentFalling) return;
   
-  currentFalling = addPlanet(currentX, 50, nextPlanetIndex);
+  currentFalling = addPlanet(currentX, 50, currentPlanetIndex);
   
-  if (PLANETS[nextPlanetIndex].isItem) {
+  if (PLANETS[currentPlanetIndex].isItem) {
     currentFalling.createdAt = Date.now();
     currentFalling.lastSpitAt = Date.now(); // ホワイトホール用
-    if (PLANETS[nextPlanetIndex].isBlackHole) blackHoles.push(currentFalling);
-    if (PLANETS[nextPlanetIndex].isWhiteHole) whiteHoles.push(currentFalling);
-    if (PLANETS[nextPlanetIndex].isSupermassive) supermassiveStars.push(currentFalling);
+    if (PLANETS[currentPlanetIndex].isBlackHole) blackHoles.push(currentFalling);
+    if (PLANETS[currentPlanetIndex].isWhiteHole) whiteHoles.push(currentFalling);
+    if (PLANETS[currentPlanetIndex].isSupermassive) supermassiveStars.push(currentFalling);
   }
   
+  // currentにnextを入れ、nextを新しく生成する
+  currentPlanetIndex = nextPlanetIndex;
   nextPlanetIndex = getNextPlanetIndex();
   updateNextPreview();
   
@@ -213,21 +227,32 @@ Events.on(engine, 'beforeUpdate', () => {
   
   const bodies = Composite.allBodies(world);
   
-  bodies.forEach(body => {
-    // ゲームオーバー判定: デッドライン(y=100)より上にあり、かつ静止している場合
-    if (body.planetIndex !== undefined && body.position.y < 100 && Math.abs(body.velocity.y) < 0.2 && !currentFalling) {
-      if (!PLANETS[body.planetIndex].isItem) {
-        setGameOver();
+  // ゲームオーバー判定
+  if (!currentFalling) {
+    for (let i = 0; i < bodies.length; i++) {
+      const body = bodies[i];
+      if (body.planetIndex !== undefined && body.position.y < 100 && Math.abs(body.velocity.y) < 0.2) {
+        if (!PLANETS[body.planetIndex].isItem) {
+          setGameOver();
+          break;
+        }
       }
     }
-  });
+  }
 
   // 超大質量星（時限爆弾）の処理
   for (let i = supermassiveStars.length - 1; i >= 0; i--) {
     const star = supermassiveStars[i];
+    
+    // ゾンビ星対策：既に合体などで消滅している場合は配列から削除
+    if (star.isMerging) {
+      supermassiveStars.splice(i, 1);
+      continue;
+    }
+    
     const planetDef = PLANETS[star.planetIndex];
 
-    if (Date.now() - star.createdAt > 10000) { // 10秒で爆発
+    if (Date.now() - star.createdAt > GAME_CONFIG.supermassiveLifespan) { // 爆発
       const x = star.position.x;
       const y = star.position.y;
 
@@ -238,9 +263,9 @@ Events.on(engine, 'beforeUpdate', () => {
           const dy = body.position.y - y;
           const dist = Math.sqrt(dx * dx + dy * dy);
           
-          if (dist < 400) {
+          if (dist < GAME_CONFIG.supernovaRadius) {
             // 爆風（距離が近いほど強い）
-            const force = (400 - dist) * 0.0003 * body.mass;
+            const force = (GAME_CONFIG.supernovaRadius - dist) * GAME_CONFIG.supernovaForceMultiplier * body.mass;
             Matter.Body.applyForce(body, body.position, {
               x: (dx / dist) * force,
               y: (dy / dist) * force
@@ -266,11 +291,19 @@ Events.on(engine, 'beforeUpdate', () => {
   // ブラックホールの処理
   for (let i = blackHoles.length - 1; i >= 0; i--) {
     const bh = blackHoles[i];
+    
+    // ゾンビ星対策：既に合体などで消滅している場合は配列から削除
+    if (bh.isMerging) {
+      blackHoles.splice(i, 1);
+      continue;
+    }
+    
     const planetDef = PLANETS[bh.planetIndex];
 
-    // ブラックホールの寿命チェック（アイテムは5秒、通常は10秒）
-    const lifespan = planetDef.isItem ? 5000 : 10000;
+    // ブラックホールの寿命チェック
+    const lifespan = planetDef.isItem ? GAME_CONFIG.blackHoleLifespanMini : GAME_CONFIG.blackHoleLifespanNormal;
     if (Date.now() - bh.createdAt > lifespan) {
+      bh.isMerging = true; // 削除フラグを立てて他からの参照も防ぐ
       Composite.remove(world, bh);
       blackHoles.splice(i, 1);
       continue;
@@ -294,8 +327,8 @@ Events.on(engine, 'beforeUpdate', () => {
             score += PLANETS[body.planetIndex].score;
             scoreEl.innerText = score;
           } else {
-            // 吸引力をさらに弱く
-            const forceMagnitude = 0.00010 * body.mass; 
+            // 吸引力を適用
+            const forceMagnitude = GAME_CONFIG.blackHolePullForce * body.mass; 
             Matter.Body.applyForce(body, body.position, {
               x: (dx / dist) * forceMagnitude,
               y: (dy / dist) * forceMagnitude
@@ -309,9 +342,17 @@ Events.on(engine, 'beforeUpdate', () => {
   // ホワイトホールの処理
   for (let i = whiteHoles.length - 1; i >= 0; i--) {
     const wh = whiteHoles[i];
+    
+    // ゾンビ星対策：既に消滅している場合は配列から削除
+    if (wh.isMerging) {
+      whiteHoles.splice(i, 1);
+      continue;
+    }
+    
     const planetDef = PLANETS[wh.planetIndex];
 
-    if (Date.now() - wh.createdAt > 5000) {
+    if (Date.now() - wh.createdAt > GAME_CONFIG.whiteHoleLifespan) {
+      wh.isMerging = true; // 削除フラグ
       Composite.remove(world, wh);
       whiteHoles.splice(i, 1);
       continue;
@@ -326,8 +367,8 @@ Events.on(engine, 'beforeUpdate', () => {
         const dist = Math.sqrt(dx * dx + dy * dy);
         
         // ブラックホールと逆のベクトルで遠ざける
-        if (dist < 300) {
-          const forceMagnitude = 0.0002 * body.mass;
+        if (dist < GAME_CONFIG.whiteHolePushRadius) {
+          const forceMagnitude = GAME_CONFIG.whiteHolePushForce * body.mass;
           Matter.Body.applyForce(body, body.position, {
             x: (dx / dist) * forceMagnitude,
             y: (dy / dist) * forceMagnitude
@@ -336,8 +377,8 @@ Events.on(engine, 'beforeUpdate', () => {
       }
     });
 
-    // 定期的に星を吐き出す (500msに1回)
-    if (Date.now() - wh.lastSpitAt > 500) {
+    // 定期的に星を吐き出す
+    if (Date.now() - wh.lastSpitAt > GAME_CONFIG.whiteHoleSpitInterval) {
       wh.lastSpitAt = Date.now();
       const spitIndex = Math.floor(Math.random() * 2); // 月か冥王星（小さい星）
       const spitRadius = PLANETS[spitIndex].radius;
@@ -350,7 +391,7 @@ Events.on(engine, 'beforeUpdate', () => {
       // 画面内に収まるように
       if (spawnX > 30 && spawnX < width - 30 && spawnY > 150 && spawnY < height - 50) {
         const newBody = addPlanet(spawnX, spawnY, spitIndex);
-        const speed = 8; // 発射速度
+        const speed = GAME_CONFIG.whiteHoleSpitSpeed; // 発射速度
         Matter.Body.setVelocity(newBody, {
           x: Math.cos(angle) * speed,
           y: Math.sin(angle) * speed
@@ -490,7 +531,7 @@ Events.on(render, 'afterRender', () => {
 
   // 落とす位置のガイドラインとプレビュー
   if (!currentFalling && !isGameOver) {
-    const planet = PLANETS[nextPlanetIndex];
+    const planet = PLANETS[currentPlanetIndex];
     const radius = planet.radius;
     
     // ガイドライン
@@ -544,6 +585,7 @@ document.getElementById('retry-btn').addEventListener('click', () => {
   currentFalling = null;
   document.getElementById('game-over-screen').classList.add('hidden');
   
+  currentPlanetIndex = getNextPlanetIndex();
   nextPlanetIndex = getNextPlanetIndex();
   updateNextPreview();
 });
