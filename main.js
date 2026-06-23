@@ -151,7 +151,31 @@ function getNextPlanetIndex() {
 }
 
 let currentPlanetIndex = getNextPlanetIndex();
-let nextPlanetIndex = getNextPlanetIndex();
+let nextPlanetIndex = getNextPlanetIndex();let flashAlpha = 0;
+// ハイスコアの読み込み
+let bestScore = parseInt(localStorage.getItem('planetGameBestScore')) || 0;
+document.getElementById('best-score').innerText = bestScore;
+
+function updateScore(points) {
+  score += points;
+  scoreEl.innerText = score;
+  
+  if (score > bestScore) {
+    bestScore = score;
+    document.getElementById('best-score').innerText = bestScore;
+    localStorage.setItem('planetGameBestScore', bestScore);
+  }
+  
+  // 背景宇宙の進化
+  const appEl = document.getElementById('app');
+  if (score >= 3000) {
+    appEl.className = 'bg-level-2';
+  } else if (score >= 1000) {
+    appEl.className = 'bg-level-1';
+  }
+}
+
+// 落下物管理用の状態
 let currentFalling = null;
 let isGameOver = false;
 let currentX = width / 2;
@@ -285,9 +309,8 @@ Events.on(engine, 'collisionStart', (event) => {
 
         const newX = (bodyA.position.x + bodyB.position.x) / 2;
         const newY = (bodyA.position.y + bodyB.position.y) / 2;
-        // スコア加算
-        score += PLANETS[newIndex].score;
-        scoreEl.innerText = score;
+        // スコア加算と背景チェック
+        updateScore(PLANETS[newIndex].score);
 
         const newBody = addPlanet(newX, newY, newIndex);
         Audio.playMergeSound(newIndex); // 合体音
@@ -849,6 +872,14 @@ Events.on(render, 'afterRender', () => {
   context.setLineDash([10, 10]);
   context.stroke();
   context.setLineDash([]);
+  
+  // フラッシュエフェクト（超新星爆発）
+  if (flashAlpha > 0) {
+    context.fillStyle = `rgba(255, 255, 255, ${flashAlpha})`;
+    context.fillRect(0, 0, width, height);
+    flashAlpha -= 0.02;
+    if (flashAlpha < 0) flashAlpha = 0;
+  }
 });
 
 function setGameOver() {
@@ -870,6 +901,7 @@ document.getElementById('retry-btn').addEventListener('click', () => {
   
   score = 0;
   scoreEl.innerText = score;
+  document.getElementById('app').className = ''; // 背景リセット
   isGameOver = false;
   blackHoles.length = 0;
   whiteHoles.length = 0;
@@ -880,6 +912,24 @@ document.getElementById('retry-btn').addEventListener('click', () => {
   currentPlanetIndex = getNextPlanetIndex();
   nextPlanetIndex = getNextPlanetIndex();
   updateNextPreview();
+});
+
+// SNSシェア機能
+document.getElementById('share-btn').addEventListener('click', () => {
+  const shareText = `スコア${score}点で宇宙を創造中！\nブラックホールに吸い込まれた... 🌌\n#PlanetGame\n`;
+  const shareUrl = window.location.href;
+
+  if (navigator.share) {
+    navigator.share({
+      title: 'Planet Game',
+      text: shareText,
+      url: shareUrl
+    }).catch(console.error);
+  } else {
+    // Web Share APIが使えない環境（PCなど）はXのシェア用URLを開く
+    const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`;
+    window.open(twitterUrl, '_blank');
+  }
 });
 
 // 初期化

@@ -34,6 +34,18 @@ body, html {
     radial-gradient(1px 1px at 60% 80%, white, transparent),
     radial-gradient(2px 2px at 90% 90%, rgba(255,255,255,0.5), transparent);
   background-size: 200px 200px;
+  background-color: #0b0c10;
+  transition: background-color 2s ease;
+}
+
+#app.bg-level-1 {
+  /* 1000点以上: 星雲風 */
+  background-color: #1a0b2e;
+}
+
+#app.bg-level-2 {
+  /* 3000点以上: 黄金の銀河風 */
+  background-color: #2e1a0b;
 }
 
 #game-container {
@@ -83,13 +95,20 @@ body, html {
 
 .score-board, .next-planet {
   background: var(--panel-bg);
-  padding: 10px 20px;
+  padding: 10px 15px;
   border-radius: 12px;
   backdrop-filter: blur(5px);
   border: 1px solid rgba(255, 255, 255, 0.1);
   display: flex;
-  flex-direction: column;
   align-items: center;
+}
+
+.next-planet {
+  flex-direction: column;
+}
+
+.score-board {
+  flex-direction: row;
 }
 
 .score-board .label, .next-planet .label {
