@@ -22,8 +22,14 @@
         </div>
         <button id="sos-button" class="sos-btn">🆘 お助け</button>
         <div class="next-planet">
-          <span class="label">NEXT</span>
-          <canvas id="next-preview-canvas" width="60" height="60"></canvas>
+          <span class="label" style="text-align: center; width: 100%;">NEXT</span>
+          <div style="display: flex; align-items: center; gap: 5px;">
+            <canvas id="next-preview-canvas" width="60" height="60"></canvas>
+            <div id="future-previews" style="display: flex; flex-direction: column; gap: 5px;">
+              <canvas id="next-preview-canvas-2" width="30" height="30"></canvas>
+              <canvas id="next-preview-canvas-3" width="30" height="30"></canvas>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -42,13 +48,15 @@
       </div>
       
       <!-- Modals -->
-      <div id="sos-modal" class="modal hidden">
+      <div id="ads-modal" class="modal hidden">
         <div class="modal-content">
-          <h2>🆘 お助けアイテム召喚</h2>
-          <p>短い動画広告を視聴して、強力なお助けアイテムを次に降らせますか？</p>
-          <div class="modal-buttons" style="display:flex; gap:10px; justify-content:center; margin-top:20px;">
-            <button id="watch-ad-btn" style="background:#66fcf1; color:#0b0c10; border:none; padding:10px 20px; border-radius:10px; cursor:pointer; font-weight:bold;">動画を見る</button>
-            <button id="cancel-sos-btn" style="background:#333; color:#fff; border:none; padding:10px 20px; border-radius:10px; cursor:pointer;">やめる</button>
+          <h2>📺 お助け＆ボーナス</h2>
+          <p>動画広告を視聴して、強力な効果を発動します。</p>
+          <div style="display:flex; flex-direction:column; gap:10px; margin-top:20px;">
+            <button id="watch-ad-sos-btn" class="ad-btn" style="background:#ff4b4b; color:#fff; border:none; padding:12px; border-radius:8px; font-weight:bold; cursor:pointer;">🆘 緊急お助けアイテム召喚</button>
+            <button id="watch-ad-future-btn" class="ad-btn" style="background:#a64dff; color:#fff; border:none; padding:12px; border-radius:8px; font-weight:bold; cursor:pointer;">🔮 未来予知（常に3手先まで見える）</button>
+            <button id="watch-ad-reroll-btn" class="ad-btn" style="background:#ffb347; color:#fff; border:none; padding:12px; border-radius:8px; font-weight:bold; cursor:pointer;">🔄 NEXTチェンジ（星を入れ替える）</button>
+            <button id="cancel-ads-btn" style="background:#333; color:#fff; border:none; padding:12px; border-radius:8px; cursor:pointer;">やめる</button>
           </div>
         </div>
       </div>

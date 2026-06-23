@@ -34,14 +34,9 @@ async function initAdMob() {
     };
     await AdMob.showBanner(bannerOptions);
 
-    // リワード広告（動画）のリスナー登録
+    // リワード広告の報酬付与処理
     AdMob.addListener('rewardedVideoUserDidEarnReward', () => {
-      // 視聴完了時の処理: 青色超巨星(14)かミニブラックホール(15)をランダムで付与
-      const isSupernova = Math.random() < 0.5;
-      currentPlanetIndex = isSupernova ? 14 : 15;
-      // 強力なアイテムなので、次のNEXTは通常のものに戻しておく（連発防止）
-      nextPlanetIndex = getNextPlanetIndex();
-      updateNextPreview();
+      handleRewardGiven();
     });
     
   } catch (error) {
@@ -64,8 +59,24 @@ async function showInterstitialAd() {
   }
 }
 
+let pendingRewardType = null;
+
+function handleRewardGiven() {
+  if (pendingRewardType === 'sos') {
+    const isSupernova = Math.random() < 0.5;
+    currentPlanetIndex = isSupernova ? 14 : 15;
+  } else if (pendingRewardType === 'future') {
+    isFutureRevealed = true;
+  } else if (pendingRewardType === 'reroll') {
+    nextPlanetsQueue = [getNextPlanetIndex(), getNextPlanetIndex(), getNextPlanetIndex()];
+  }
+  updateNextPreview();
+  pendingRewardType = null;
+}
+
 // リワード広告の表示関数
-async function showRewardVideoAd() {
+async function showRewardVideoAd(type) {
+  pendingRewardType = type;
   try {
     const options = {
       adId: 'ca-app-pub-3940256099942544/5224354917', // Google Test Rewarded Video ID
@@ -76,10 +87,7 @@ async function showRewardVideoAd() {
   } catch (error) {
     console.log("Reward video ad failed:", error);
     // Web環境でのテスト用（動画が見れない場合は直接付与）
-    const isSupernova = Math.random() < 0.5;
-    currentPlanetIndex = isSupernova ? 14 : 15;
-    nextPlanetIndex = getNextPlanetIndex();
-    updateNextPreview();
+    handleRewardGiven();
   }
 }
 
@@ -150,8 +158,11 @@ function getNextPlanetIndex() {
   return Math.floor(Math.random() * 5); // 通常の月〜金星
 }
 
-let currentPlanetIndex = getNextPlanetIndex();
-let nextPlanetIndex = getNextPlanetIndex();let flashAlpha = 0;
+let isFutureRevealed = false;
+let nextPlanetsQueue = [getNextPlanetIndex(), getNextPlanetIndex(), getNextPlanetIndex()];
+let currentPlanetIndex = nextPlanetsQueue.shift();
+nextPlanetsQueue.push(getNextPlanetIndex());
+let flashAlpha = 0;
 // ハイスコアの読み込み
 let bestScore = parseInt(localStorage.getItem('planetGameBestScore')) || 0;
 document.getElementById('best-score').innerText = bestScore;
@@ -186,19 +197,38 @@ const supermassiveStars = [];
 const scoreEl = document.getElementById('score');
 const nextPreviewCanvas = document.getElementById('next-preview-canvas');
 
-function updateNextPreview() {
-  if (!nextPreviewCanvas) return;
-  const planet = PLANETS[nextPlanetIndex];
-  const ctx = nextPreviewCanvas.getContext('2d');
-  ctx.clearRect(0, 0, 60, 60);
+function drawPreviewOnCanvas(canvasId, planetDef, size, isLocked) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
   
   ctx.save();
-  ctx.translate(30, 30);
-  // 少し大きめの星は縮小して枠内に収める
-  const scale = planet.radius > 60 ? 25 / planet.radius : 1;
-  ctx.scale(scale, scale);
-  drawPlanetContent(ctx, planet, planet.radius);
+  ctx.translate(canvas.width / 2, canvas.height / 2);
+  
+  if (isLocked) {
+    ctx.fillStyle = 'rgba(255,255,255,0.2)';
+    ctx.beginPath();
+    ctx.arc(0, 0, size/2 * 0.8, 0, 2*Math.PI);
+    ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.font = `bold ${size/2 * 0.8}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('?', 0, 0);
+  } else {
+    // 描画用のスケール
+    const scale = planetDef.radius > size/2 ? (size/2 * 0.8) / planetDef.radius : 1;
+    ctx.scale(scale, scale);
+    drawPlanetContent(ctx, planetDef, planetDef.radius);
+  }
   ctx.restore();
+}
+
+function updateNextPreview() {
+  drawPreviewOnCanvas('next-preview-canvas', PLANETS[nextPlanetsQueue[0]], 60, false);
+  drawPreviewOnCanvas('next-preview-canvas-2', PLANETS[nextPlanetsQueue[1]], 30, !isFutureRevealed);
+  drawPreviewOnCanvas('next-preview-canvas-3', PLANETS[nextPlanetsQueue[2]], 30, !isFutureRevealed);
 }
 
 function addPlanet(x, y, index) {
@@ -241,8 +271,8 @@ function triggerDrop() {
   }
   
   // currentにnextを入れ、nextを新しく生成する
-  currentPlanetIndex = nextPlanetIndex;
-  nextPlanetIndex = getNextPlanetIndex();
+  currentPlanetIndex = nextPlanetsQueue.shift();
+  nextPlanetsQueue.push(getNextPlanetIndex());
   updateNextPreview();
   
   setTimeout(() => {
@@ -909,8 +939,10 @@ document.getElementById('retry-btn').addEventListener('click', () => {
   currentFalling = null;
   document.getElementById('game-over-screen').classList.add('hidden');
   
-  currentPlanetIndex = getNextPlanetIndex();
-  nextPlanetIndex = getNextPlanetIndex();
+  isFutureRevealed = false;
+  nextPlanetsQueue = [getNextPlanetIndex(), getNextPlanetIndex(), getNextPlanetIndex()];
+  currentPlanetIndex = nextPlanetsQueue.shift();
+  nextPlanetsQueue.push(getNextPlanetIndex());
   updateNextPreview();
 });
 
@@ -1005,31 +1037,43 @@ closeLegendBtn.addEventListener('click', () => {
 });
 
 // ======================================
-// お助けアイテム（SOS）ロジック
+// 広告＆お助けモーダルロジック
 // ======================================
-const sosBtn = document.getElementById('sos-button');
-const sosModal = document.getElementById('sos-modal');
-const watchAdBtn = document.getElementById('watch-ad-btn');
-const cancelSosBtn = document.getElementById('cancel-sos-btn');
+const adsBtn = document.getElementById('sos-button');
+const adsModal = document.getElementById('ads-modal');
+const cancelAdsBtn = document.getElementById('cancel-ads-btn');
 
-sosBtn.addEventListener('click', () => {
+const watchAdSosBtn = document.getElementById('watch-ad-sos-btn');
+const watchAdFutureBtn = document.getElementById('watch-ad-future-btn');
+const watchAdRerollBtn = document.getElementById('watch-ad-reroll-btn');
+
+adsBtn.addEventListener('click', () => {
   if (isGameOver) return;
-  sosModal.classList.remove('hidden');
+  adsModal.classList.remove('hidden');
   Runner.stop(runner); // 物理演算をポーズ
 });
 
-cancelSosBtn.addEventListener('click', () => {
-  sosModal.classList.add('hidden');
+cancelAdsBtn.addEventListener('click', () => {
+  adsModal.classList.add('hidden');
   if (!isGameOver) {
     Runner.run(runner, engine); // 再開
   }
 });
 
-watchAdBtn.addEventListener('click', () => {
-  sosModal.classList.add('hidden');
-  if (!isGameOver) {
-    Runner.run(runner, engine); // 物理演算再開
-  }
-  // 広告を表示
-  showRewardVideoAd();
+watchAdSosBtn.addEventListener('click', () => {
+  adsModal.classList.add('hidden');
+  if (!isGameOver) Runner.run(runner, engine);
+  showRewardVideoAd('sos');
+});
+
+watchAdFutureBtn.addEventListener('click', () => {
+  adsModal.classList.add('hidden');
+  if (!isGameOver) Runner.run(runner, engine);
+  showRewardVideoAd('future');
+});
+
+watchAdRerollBtn.addEventListener('click', () => {
+  adsModal.classList.add('hidden');
+  if (!isGameOver) Runner.run(runner, engine);
+  showRewardVideoAd('reroll');
 });
